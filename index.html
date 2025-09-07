@@ -106,40 +106,44 @@
 </head>
 
 <body>
-
+    <!-- 
+    data-id distinguishes node positions, the data-gnx identifies body content.
+    1 body can be used in multiple positions (nodes).
+    Clicking the caret expands/collapses and selects the node. Clickng the text selects only.
+    -->
     <div class="sidebar">
         <ul>
-            <li data-id="1" data-expanded="false">
+            <li data-id="1" data-gnx="1" data-expanded="false">
                 <span class="caret"></span><span class="node-text">Section 1</span>
                 <ul>
-                    <li data-id="2" data-expanded="false">
+                    <li data-id="2" data-gnx="2" data-expanded="false">
                         <span class="caret"></span><span class="node-text">Page A</span>
                         <ul>
-                            <li data-id="3" data-expanded="false">
+                            <li data-id="3" data-gnx="3" data-expanded="false">
                                 <span class="caret"></span><span class="node-text">Subpage A.1</span>
                                 <ul></ul>
                             </li>
-                            <li data-id="4" data-expanded="false">
+                            <li data-id="4" data-gnx="4" data-expanded="false">
                                 <span class="caret"></span><span class="node-text">Subpage A.2</span>
                                 <ul></ul>
                             </li>
                         </ul>
                     </li>
-                    <li data-id="5" data-expanded="false">
+                    <li data-id="5" data-gnx="5" data-expanded="false">
                         <span class="caret"></span><span class="node-text">Page B</span>
                         <ul></ul>
                     </li>
                 </ul>
             </li>
-            <li data-id="6" data-expanded="false">
+            <li data-id="6" data-gnx="6" data-expanded="false">
                 <span class="caret"></span><span class="node-text">Section 2</span>
                 <ul>
-                    <li data-id="7" data-expanded="false">
-                        <span class="caret"></span><span class="node-text">Page C</span>
+                    <li data-id="7" data-gnx="7" data-expanded="false">
+                        <span class="caret"></span><span class="node-text">Page C (Repeated)</span>
                         <ul></ul>
                     </li>
-                    <li data-id="8" data-expanded="false">
-                        <span class="caret"></span><span class="node-text">Page D</span>
+                    <li data-id="8" data-gnx="7" data-expanded="false">
+                        <span class="caret"></span><span class="node-text">Page C (Repeated)</span>
                         <ul></ul>
                     </li>
                 </ul>
@@ -147,23 +151,22 @@
         </ul>
     </div>
 
-    <div class="content" id="article"></div>
+    <div class="content" id="body"></div>
 
     <script>
-        const articles = {
+        const bodies = {
             "1": "Section 1 content here\nMultiple lines supported.",
             "2": "Page A content here\nMore text.",
             "3": "Subpage A.1 content here",
             "4": "Subpage A.2 content here",
             "5": "Page B content here",
             "6": "Section 2 content here",
-            "7": "Page C content here",
-            "8": "Page D content here"
+            "7": "Page C (Repeated) content here\nSame (body content) GNX used twice, with different (position) IDs.",
         };
 
         document.addEventListener("DOMContentLoaded", () => {
             const lis = document.querySelectorAll(".sidebar li");
-            const articleDiv = document.getElementById("article");
+            const bodyDiv = document.getElementById("body");
             let selectedLi = null;
 
             function selectNode(li) {
@@ -184,9 +187,9 @@
                     parent = parent.parentElement; // move up to the LI parent
                 }
 
-                // Show article
-                const id = li.getAttribute("data-id");
-                articleDiv.textContent = articles[id] || "";
+                // Show body content
+                const id = li.getAttribute("data-gnx");
+                bodyDiv.textContent = bodies[id] || "";
             }
 
             // Caret click: toggle expand + select
