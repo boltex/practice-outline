@@ -40,6 +40,17 @@
             white-space: pre-wrap;
         }
 
+        #outline-pane:focus,
+        #body-pane:focus {
+            outline: 3px solid blue;
+            outline-offset: -3px;
+        }
+
+        #outline-pane:focus-visible,
+        #body-pane:focus-visible {
+            outline: none;
+        }
+
         /* Tree styling */
         ul {
             list-style: none;
@@ -125,11 +136,13 @@
 
 <body>
     <!-- 
+    'li' elements represent nodes. They each have a caret, text span and a single 'ul' for children.
     data-id distinguishes node positions, the data-gnx identifies body content.
-    1 body can be used in multiple positions (nodes).
+    1 body can be used in multiple positions (nodes) that's why data-id and data-gnx differ.
+    data-expanded controls whether children are shown or hidden.
     Clicking the caret expands/collapses and selects the node. Clickng the text selects only.
     -->
-    <div id="outline-pane">
+    <div id="outline-pane" tabindex="0">
         <ul>
             <li data-id="1" data-gnx="1" data-expanded="false">
                 <span class="caret"></span><span class="node-text">Section 1</span>
@@ -175,7 +188,7 @@
 
     <div id="resizer"></div>
 
-    <div id="body-pane"></div>
+    <div id="body-pane" tabindex="0"></div>
 
     <script>
         const bodies = {
