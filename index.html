@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Outline Demo</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            font-family: sans-serif;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: #f7f7f7;
+            border-right: 1px solid #ccc;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        .content {
+            flex: 1;
+            padding: 2rem;
+        }
+
+        /* Tree styling */
+        ul {
+            list-style: none;
+            padding-left: 1rem;
+        }
+
+        li {
+            padding: 2px 0;
+        }
+
+        /* Caret span */
+        li .caret {
+            display: inline-block;
+            width: 1em;
+            /* space for alignment */
+            cursor: pointer;
+            user-select: none;
+        }
+
+        li[data-expanded="true"]>.caret::after {
+            content: "▾";
+        }
+
+        li[data-expanded="false"]>.caret::after {
+            content: "▸";
+        }
+
+        li.ancestor>span.node-text {
+            background: #edf6ff;
+            /* slightly lighter than selected node */
+            border-radius: 4px;
+            padding: 2px 4px;
+        }
+
+        /* Hide caret if ul is empty */
+        li:has(> ul:empty)>.caret {
+            display: inline-block;
+            visibility: hidden;
+        }
+
+        /* Highlight only the text span */
+        li>span.node-text {
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        li.selected>span.node-text {
+            background: #d0e4ff;
+            border-radius: 4px;
+            padding: 2px 4px;
+        }
+
+        /* Collapsed nodes */
+        li[data-expanded="false"]>ul {
+            display: none;
+        }
+
+        /* Articles */
+        .article {
+            display: none;
+        }
+
+        .article.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="sidebar">
+        <ul>
+            <li data-id="1" data-expanded="true">
+                <span class="caret"></span><span class="node-text">Section 1</span>
+                <ul>
+                    <li data-id="2" data-expanded="true">
+                        <span class="caret"></span><span class="node-text">Page A</span>
+                        <ul>
+                            <li data-id="3" data-expanded="false">
+                                <span class="caret"></span><span class="node-text">Subpage A.1</span>
+                                <ul></ul>
+                            </li>
+                            <li data-id="4" data-expanded="false">
+                                <span class="caret"></span><span class="node-text">Subpage A.2</span>
+                                <ul></ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li data-id="5" data-expanded="false">
+                        <span class="caret"></span><span class="node-text">Page B</span>
+                        <ul></ul>
+                    </li>
+                </ul>
+            </li>
+            <li data-id="6" data-expanded="false">
+                <span class="caret"></span><span class="node-text">Section 2</span>
+                <ul>
+                    <li data-id="7" data-expanded="false">
+                        <span class="caret"></span><span class="node-text">Page C</span>
+                        <ul></ul>
+                    </li>
+                    <li data-id="8" data-expanded="false">
+                        <span class="caret"></span><span class="node-text">Page D</span>
+                        <ul></ul>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+
+    <div class="content">
+        <div class="article" data-id="1">Section 1 content here.<br>Multiple lines supported.</div>
+        <div class="article" data-id="2">Page A content here.<br>More text.</div>
+        <div class="article" data-id="3">Subpage A.1 content here.</div>
+        <div class="article" data-id="4">Subpage A.2 content here.</div>
+        <div class="article" data-id="5">Page B content here.</div>
+        <div class="article" data-id="6">Section 2 content here.</div>
+        <div class="article" data-id="7">Page C content here.</div>
+        <div class="article" data-id="8">Page D content here.</div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const lis = document.querySelectorAll(".sidebar li");
+            const articles = document.querySelectorAll(".article");
+            let selectedLi = null;
+
+            function selectNode(li) {
+                if (selectedLi) selectedLi.classList.remove("selected");
+
+                // Remove previous ancestor highlights
+                document.querySelectorAll(".sidebar li.ancestor").forEach(a => a.classList.remove("ancestor"));
+
+                li.classList.add("selected");
+                selectedLi = li;
+
+                // Highlight ancestors
+                let parent = li.parentElement;
+                while (parent && parent.classList) {
+                    if (parent.tagName === "LI") {
+                        parent.classList.add("ancestor");
+                        console.log("Added ancestor to", parent);
+                    }
+                    parent = parent.parentElement; // move up to the LI parent
+                }
+
+                // Show article
+                const id = li.getAttribute("data-id");
+                articles.forEach(a => a.classList.toggle("active", a.getAttribute("data-id") === id));
+            }
+
+            // Caret click: toggle expand + select
+            document.querySelectorAll(".sidebar .caret").forEach(caret => {
+                caret.addEventListener("click", e => {
+                    e.stopPropagation();
+                    const li = caret.parentElement;
+                    const expanded = li.getAttribute("data-expanded") === "true";
+                    li.setAttribute("data-expanded", expanded ? "false" : "true");
+                    selectNode(li);
+                });
+            });
+
+            // Text click: select only
+            document.querySelectorAll(".sidebar li > span.node-text").forEach(span => {
+                span.addEventListener("click", e => {
+                    e.stopPropagation();
+                    selectNode(span.parentElement);
+                });
+            });
+
+            // Auto-select first node
+            if (lis.length > 0) selectNode(lis[0]);
+        });
+    </script>
+
+</body>
+
+</html>
