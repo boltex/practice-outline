@@ -11,18 +11,19 @@
             height: 100vh;
         }
 
-        .sidebar {
+        #outline-pane {
             width: 250px;
-            background: #f7f7f7;
+            background: #ffffec;
             border-right: 1px solid #ccc;
             padding: 1rem 1rem 0 0;
             overflow-y: auto;
             font-family: sans-serif;
         }
 
-        .content {
+        #body-pane {
             flex: 1;
             padding: 1rem 0 0 1rem;
+            background: #fff6f5;
             overflow-y: auto;
             font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
             white-space: pre-wrap;
@@ -55,12 +56,22 @@
         }
 
         /* Caret glyphs */
+        li>.caret::after {
+            content: "❯";
+            display: inline-block;
+            transform-origin: 50% 50%;
+            transition: transform 160ms cubic-bezier(.2, .9, .3, 1), color 150ms;
+            transform: rotate(0deg);
+        }
+
         li[data-expanded="true"]>.caret::after {
-            content: "▾";
+            transform: rotate(90deg);
+            color: inherit;
         }
 
         li[data-expanded="false"]>.caret::after {
-            content: "▸";
+            transform: rotate(0deg);
+            color: #888;
         }
 
         /* Label fills remaining width in second column with 'block' */
@@ -74,11 +85,11 @@
 
         /* Selected + ancestor styles still just target the label */
         li.selected>.node-text {
-            background: #d0e4ff;
+            background: #cae1ff;
         }
 
         li.ancestor>.node-text {
-            background: #e4f1ff;
+            background: #eef5ff;
         }
 
         /* Children appear underneath the row, same indentation as before */
@@ -106,7 +117,7 @@
     1 body can be used in multiple positions (nodes).
     Clicking the caret expands/collapses and selects the node. Clickng the text selects only.
     -->
-    <div class="sidebar">
+    <div id="outline-pane">
         <ul>
             <li data-id="1" data-gnx="1" data-expanded="false">
                 <span class="caret"></span><span class="node-text">Section 1</span>
@@ -137,7 +148,11 @@
                         <span class="caret"></span><span class="node-text">Page C (Repeated)</span>
                         <ul></ul>
                     </li>
-                    <li data-id="8" data-gnx="7" data-expanded="false">
+                    <li data-id="8" data-gnx="8" data-expanded="false">
+                        <span class="caret"></span><span class="node-text">Page D</span>
+                        <ul></ul>
+                    </li>
+                    <li data-id="9" data-gnx="7" data-expanded="false">
                         <span class="caret"></span><span class="node-text">Page C (Repeated)</span>
                         <ul></ul>
                     </li>
@@ -146,7 +161,7 @@
         </ul>
     </div>
 
-    <div class="content" id="body"></div>
+    <div id="body-pane"></div>
 
     <script>
         const bodies = {
@@ -157,18 +172,19 @@
             "5": "Page B content here",
             "6": "Section 2 content here",
             "7": "Page C (Repeated) content here\nSame (body content) GNX used twice, with different (position) IDs.",
+            "8": "Page D content here"
         };
 
         document.addEventListener("DOMContentLoaded", () => {
-            const lis = document.querySelectorAll(".sidebar li");
-            const bodyDiv = document.getElementById("body");
+            const lis = document.querySelectorAll("#outline-pane li");
+            const bodyDiv = document.getElementById("body-pane");
             let selectedLi = null;
 
             function selectNode(li) {
                 if (selectedLi) selectedLi.classList.remove("selected");
 
                 // Remove previous ancestor highlights
-                document.querySelectorAll(".sidebar li.ancestor").forEach(a => a.classList.remove("ancestor"));
+                document.querySelectorAll("#outline-pane li.ancestor").forEach(a => a.classList.remove("ancestor"));
 
                 li.classList.add("selected");
                 selectedLi = li;
@@ -188,7 +204,7 @@
             }
 
             // Caret click: toggle expand + select
-            document.querySelectorAll(".sidebar .caret").forEach(caret => {
+            document.querySelectorAll("#outline-pane .caret").forEach(caret => {
                 caret.addEventListener("click", e => {
                     e.stopPropagation();
                     const li = caret.parentElement;
@@ -199,7 +215,7 @@
             });
 
             // Text click: select only
-            document.querySelectorAll(".sidebar li > span.node-text").forEach(span => {
+            document.querySelectorAll("#outline-pane li > span.node-text").forEach(span => {
                 span.addEventListener("click", e => {
                     e.stopPropagation();
                     selectNode(span.parentElement);
