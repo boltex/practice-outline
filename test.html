@@ -86,19 +86,35 @@
         document.addEventListener('DOMContentLoaded', () => {
             const resizer = document.getElementById('resizer');
             const leftPanel = document.getElementById('leftPanel');
-            const minWidth = 150; // Minimum width in pixels for the left panel
+            const minWidth = 250; // Minimum width in pixels for the left panel
             leftPanel.style.flexBasis = minWidth + 'px';
             leftPanel.style.flexGrow = 0;
             leftPanel.style.flexShrink = 0;
             let isDragging = false;
 
             const throttle = (func, limit) => {
-                let inThrottle;
+                let lastCall = 0;
+                let timeout;
+
                 return function (...args) {
-                    if (!inThrottle) {
-                        func.apply(this, args);
-                        inThrottle = true;
-                        setTimeout(() => inThrottle = false, limit);
+                    const now = Date.now();
+                    const context = this;
+
+                    // Clear any existing timeout
+                    if (timeout) {
+                        clearTimeout(timeout);
+                    }
+
+                    // If enough time has passed since last call, execute immediately
+                    if (now - lastCall >= limit) {
+                        lastCall = now;
+                        func.apply(context, args);
+                    } else {
+                        // Schedule the last event to run when throttle period ends
+                        timeout = setTimeout(() => {
+                            lastCall = Date.now();
+                            func.apply(context, args);
+                        }, limit - (now - lastCall));
                     }
                 };
             };

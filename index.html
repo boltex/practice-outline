@@ -11,10 +11,16 @@
             height: 100vh;
         }
 
+        body.dragging {
+            cursor: ew-resize !important;
+        }
+
         #outline-pane {
             width: 250px;
+            white-space: nowrap;
             background: #ffffec;
-            padding: 1rem 1rem 0 0;
+            padding: 1rem 0 0 0;
+            overflow-x: hidden;
             overflow-y: auto;
             font-family: sans-serif;
         }
@@ -85,6 +91,7 @@
             display: block;
             cursor: pointer;
             padding: 2px 4px;
+            margin-right: 1rem;
             border-radius: 4px;
         }
 
@@ -185,7 +192,90 @@
         document.addEventListener("DOMContentLoaded", () => {
             const lis = document.querySelectorAll("#outline-pane li");
             const bodyDiv = document.getElementById("body-pane");
+            const resizer = document.getElementById('resizer');
+            const outlineDiv = document.getElementById('outline-pane');
+            const minWidth = 0;
             let selectedLi = null;
+            let outlineProportion;
+            let isDragging = false;
+
+            function updateProportion() {
+                outlineProportion = outlineDiv.offsetWidth / window.innerWidth;
+            }
+
+            const throttle = (func, limit) => {
+                let lastCall = 0;
+                let timeout;
+
+                return function (...args) {
+                    const now = Date.now();
+                    const context = this;
+                    if (timeout) {
+                        clearTimeout(timeout);
+                    }
+                    if (now - lastCall >= limit) {
+                        lastCall = now;
+                        func.apply(context, args);
+                    } else {
+                        timeout = setTimeout(() => {
+                            lastCall = Date.now();
+                            func.apply(context, args);
+                        }, limit - (now - lastCall));
+                    }
+                };
+            };
+
+            const updateOutlineWidth = throttle(() => {
+                let newWidth = window.innerWidth * outlineProportion;
+                // Respect minimum width
+                if (newWidth < minWidth) {
+                    newWidth = minWidth;
+                }
+                outlineDiv.style.width = `${newWidth}px`;
+            }, 125);
+
+            const handleDrag = throttle((e) => {
+                let clientX = e.clientX;
+                if (e.touches) {
+                    clientX = e.touches[0].clientX;
+                }
+                const newWidth = clientX;
+
+                if (newWidth >= minWidth) {
+                    outlineDiv.style.width = newWidth + 'px';
+                } else {
+                    outlineDiv.style.width = minWidth + 'px';
+                }
+            }, 125);
+
+            const stopDrag = () => {
+                if (isDragging) {
+                    isDragging = false;
+                    document.body.classList.remove('dragging');
+                    document.removeEventListener('mousemove', handleDrag);
+                    document.removeEventListener('mouseup', stopDrag);
+                    document.removeEventListener('touchmove', handleDrag);
+                    document.removeEventListener('touchend', stopDrag);
+                    updateProportion();
+                }
+            };
+
+            const startDrag = (e) => {
+                isDragging = true;
+                document.body.classList.add('dragging');
+                e.preventDefault();
+                document.addEventListener('mousemove', handleDrag);
+                document.addEventListener('mouseup', stopDrag);
+                document.addEventListener('touchmove', handleDrag, { passive: false });
+                document.addEventListener('touchend', stopDrag);
+            };
+
+            resizer.addEventListener('mousedown', startDrag);
+            resizer.addEventListener('touchstart', startDrag);
+
+            updateProportion();
+
+            window.addEventListener('resize', updateOutlineWidth);
 
             function selectNode(li) {
                 if (selectedLi) selectedLi.classList.remove("selected");
