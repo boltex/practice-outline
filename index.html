@@ -169,7 +169,6 @@
                 while (parent && parent.classList) {
                     if (parent.tagName === "LI") {
                         parent.classList.add("ancestor");
-                        console.log("Added ancestor to", parent);
                     }
                     parent = parent.parentElement; // move up to the LI parent
                 }
