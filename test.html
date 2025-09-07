@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resizable Split-Screen</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            /* Prevent body scroll */
+        }
+
+        /* Custom styles for the resizer bar */
+        #resizer {
+            cursor: ew-resize;
+            touch-action: none;
+        }
+
+        /* Hide scrollbar but allow scrolling */
+        .scrolling-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrolling-content {
+            -ms-overflow-style: none;
+            /* IE and Edge */
+            scrollbar-width: none;
+            /* Firefox */
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+
+    <div id="container" class="flex flex-row h-screen overflow-hidden">
+
+        <!-- Left Panel (Outline) -->
+        <div id="leftPanel"
+            class="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-6 flex flex-col flex-shrink-0 scrolling-content transition-all duration-100 ease-in-out">
+            <h1 class="text-xl font-bold mb-4">Outline</h1>
+            <ul class="space-y-2 text-sm">
+                <li><a href="#" class="block p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">Introduction</a>
+                </li>
+                <li><a href="#" class="block p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">Project
+                        Overview</a></li>
+                <li><a href="#" class="block p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">Key Features</a>
+                </li>
+                <li><a href="#" class="block p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">Technical
+                        Details</a></li>
+                <li><a href="#" class="block p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">Conclusion</a>
+                </li>
+                <li><a href="#" class="block p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">Future Plans</a>
+                </li>
+                <li><a href="#" class="block p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">Appendix</a></li>
+                <li><a href="#" class="block p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">References</a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Resizer Bar -->
+        <div id="resizer"
+            class="w-4 h-full bg-gray-300 dark:bg-gray-600 hover:bg-blue-500 transition-colors duration-200"></div>
+
+        <!-- Right Panel (Content) -->
+        <div id="rightPanel" class="flex-grow bg-gray-50 dark:bg-gray-800 p-8 flex flex-col scrolling-content">
+            <h1 class="text-3xl font-extrabold mb-4">A Comprehensive Guide to Modern Web Layouts</h1>
+            <div class="prose dark:prose-invert max-w-none">
+                <p>Welcome to this document outlining best practices for creating flexible and responsive web layouts.
+                    The left panel serves as a navigational outline, while this section contains the main content. You
+                    can resize the left panel by dragging the vertical bar to adjust the screen real estate for each
+                    section. This technique is commonly used in code editors, documentation sites, and productivity
+                    applications to enhance user experience.</p>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const resizer = document.getElementById('resizer');
+            const leftPanel = document.getElementById('leftPanel');
+            const minWidth = 150; // Minimum width in pixels for the left panel
+            leftPanel.style.flexBasis = minWidth + 'px';
+            leftPanel.style.flexGrow = 0;
+            leftPanel.style.flexShrink = 0;
+            let isDragging = false;
+
+            const throttle = (func, limit) => {
+                let inThrottle;
+                return function (...args) {
+                    if (!inThrottle) {
+                        func.apply(this, args);
+                        inThrottle = true;
+                        setTimeout(() => inThrottle = false, limit);
+                    }
+                };
+            };
+
+            const handleDrag = throttle((e) => {
+                let clientX = e.clientX;
+                if (e.touches) {
+                    clientX = e.touches[0].clientX;
+                }
+                const newWidth = clientX;
+
+                if (newWidth >= minWidth) {
+                    leftPanel.style.flexBasis = newWidth + 'px';
+                }
+            }, 125);
+
+            const stopDrag = () => {
+                if (isDragging) {
+                    isDragging = false;
+                    document.removeEventListener('mousemove', handleDrag);
+                    document.removeEventListener('mouseup', stopDrag);
+                    document.removeEventListener('touchmove', handleDrag);
+                    document.removeEventListener('touchend', stopDrag);
+                }
+            };
+
+            const startDrag = (e) => {
+                isDragging = true;
+                e.preventDefault();
+                document.addEventListener('mousemove', handleDrag);
+                document.addEventListener('mouseup', stopDrag);
+                document.addEventListener('touchmove', handleDrag, { passive: false });
+                document.addEventListener('touchend', stopDrag);
+            };
+
+            resizer.addEventListener('mousedown', startDrag);
+            resizer.addEventListener('touchstart', startDrag);
+        });
+    </script>
+</body>
+
+</html>

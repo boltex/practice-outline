@@ -14,10 +14,15 @@
         #outline-pane {
             width: 250px;
             background: #ffffec;
-            border-right: 1px solid #ccc;
             padding: 1rem 1rem 0 0;
             overflow-y: auto;
             font-family: sans-serif;
+        }
+
+        #resizer {
+            width: 5px;
+            cursor: ew-resize;
+            background: #cae1ff;
         }
 
         #body-pane {
@@ -160,6 +165,8 @@
             </li>
         </ul>
     </div>
+
+    <div id="resizer"></div>
 
     <div id="body-pane"></div>
 
