@@ -9,41 +9,52 @@
             margin: 0;
             display: flex;
             height: 100vh;
-            font-family: sans-serif;
         }
 
         .sidebar {
             width: 250px;
             background: #f7f7f7;
             border-right: 1px solid #ccc;
-            padding: 1rem;
+            padding: 1rem 1rem 0 0;
             overflow-y: auto;
+            font-family: sans-serif;
         }
 
         .content {
             flex: 1;
-            padding: 2rem;
+            padding: 1rem 0 0 1rem;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            white-space: pre-wrap;
         }
 
         /* Tree styling */
         ul {
             list-style: none;
             padding-left: 1rem;
+            margin: 0;
         }
 
+        /* Each list item: 2-column grid (caret | label) */
         li {
+            display: grid;
+            grid-template-columns: 1em 1fr;
+            align-items: start;
+            row-gap: 2px;
+            /* space between the row and its children */
             padding: 2px 0;
         }
 
-        /* Caret span */
-        li .caret {
+        /* Caret stays a small target in the first column */
+        li>.caret {
+            grid-column: 1;
             display: inline-block;
             width: 1em;
-            /* space for alignment */
             cursor: pointer;
             user-select: none;
         }
 
+        /* Caret glyphs */
         li[data-expanded="true"]>.caret::after {
             content: "▾";
         }
@@ -52,33 +63,37 @@
             content: "▸";
         }
 
-        li.ancestor>span.node-text {
-            background: #edf6ff;
-            /* slightly lighter than selected node */
-            border-radius: 4px;
-            padding: 2px 4px;
-        }
-
-        /* Hide caret if ul is empty */
-        li:has(> ul:empty)>.caret {
-            display: inline-block;
-            visibility: hidden;
-        }
-
-        /* Highlight only the text span */
-        li>span.node-text {
+        /* Label fills remaining width in second column with 'block' */
+        li>.node-text {
+            grid-column: 2;
+            display: block;
             cursor: pointer;
             padding: 2px 4px;
             border-radius: 4px;
         }
 
-        li.selected>span.node-text {
+        /* Selected + ancestor styles still just target the label */
+        li.selected>.node-text {
             background: #d0e4ff;
-            border-radius: 4px;
-            padding: 2px 4px;
         }
 
-        /* Collapsed nodes */
+        li.ancestor>.node-text {
+            background: #e4f1ff;
+        }
+
+        /* Children appear underneath the row, same indentation as before */
+        li>ul {
+            grid-column: 1 / -1;
+            margin: 0;
+            padding-left: 1rem;
+        }
+
+        /* Hide caret if there are no children */
+        li:has(> ul:empty)>.caret {
+            visibility: hidden;
+        }
+
+        /* Collapse children when needed */
         li[data-expanded="false"]>ul {
             display: none;
         }
@@ -86,10 +101,6 @@
         /* Articles */
         .article {
             display: none;
-        }
-
-        .article.active {
-            display: block;
         }
     </style>
 </head>
