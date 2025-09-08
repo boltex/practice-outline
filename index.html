@@ -41,14 +41,11 @@
         }
 
         #outline-pane:focus,
-        #body-pane:focus {
-            outline: 3px solid blue;
-            outline-offset: -3px;
-        }
-
+        #body-pane:focus,
         #outline-pane:focus-visible,
         #body-pane:focus-visible {
-            outline: none;
+            outline: 3px solid blue;
+            outline-offset: -3px;
         }
 
         /* Tree styling */
@@ -82,7 +79,7 @@
             content: "❯";
             display: inline-block;
             transform-origin: 50% 50%;
-            transition: transform 160ms cubic-bezier(.2, .9, .3, 1), color 150ms;
+            transition: transform 160ms cubic-bezier(.2, .9, .3, 1), color 120ms;
             transform: rotate(0deg);
         }
 
@@ -188,7 +185,7 @@
 
     <div id="resizer"></div>
 
-    <div id="body-pane" tabindex="0"></div>
+    <div id="body-pane" tabindex="0" contenteditable="plaintext-only"></div>
 
     <script>
         const bodies = {
@@ -211,6 +208,27 @@
             let selectedLi = null;
             let outlineProportion;
             let isDragging = false;
+
+
+            outlineDiv.addEventListener('dblclick', (event) => {
+                if (event.target.classList.contains('node-text')) {
+                    console.log(`Double-Clicked on ${event.target.textContent} TODO: allow rename and copy to clones if any on enter/escape/blur`);
+                }
+            });
+
+            outlineDiv.addEventListener('keydown', (e) => {
+                if (e.key === 'Tab' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                    e.preventDefault();
+                    bodyDiv.focus();
+                }
+            });
+
+            bodyDiv.addEventListener('keydown', (e) => {
+                if (e.key === 'Tab' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                    e.preventDefault();
+                    outlineDiv.focus();
+                }
+            });
 
             function updateProportion() {
                 outlineProportion = outlineDiv.offsetWidth / window.innerWidth;
@@ -296,6 +314,12 @@
                 // Remove previous ancestor highlights
                 document.querySelectorAll("#outline-pane li.ancestor").forEach(a => a.classList.remove("ancestor"));
 
+                // The body-pane is contenteditable, so grab its content before changing focus
+                if (selectedLi) {
+                    const prevGnx = selectedLi.getAttribute("data-gnx");
+                    bodies[prevGnx] = bodyDiv.textContent;
+                }
+
                 li.classList.add("selected");
                 selectedLi = li;
 
@@ -309,8 +333,8 @@
                 }
 
                 // Show body content
-                const id = li.getAttribute("data-gnx");
-                bodyDiv.textContent = bodies[id] || "";
+                const gnx = li.getAttribute("data-gnx");
+                bodyDiv.textContent = bodies[gnx] || "";
             }
 
             // Caret click: toggle expand + select
