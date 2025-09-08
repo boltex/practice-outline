@@ -136,6 +136,7 @@
     'li' elements represent nodes. They each have a caret, text span and a single 'ul' for children.
     data-id distinguishes node positions, the data-gnx identifies body content.
     1 body can be used in multiple positions (nodes) that's why data-id and data-gnx differ.
+    (TODO: data-id MAY be omitted if not needed.)
     data-expanded controls whether children are shown or hidden.
     Clicking the caret expands/collapses and selects the node. Clickng the text selects only.
     -->
@@ -209,7 +210,226 @@
             let outlineProportion;
             let isDragging = false;
 
+            // Navigation helpers
+            const children = (p) => {
+                // Given an 'li' position element, return an array of its child 'li' elements.
+                const ul = p.querySelector('ul');
+                if (ul) {
+                    return Array.from(ul.children).filter(c => c.tagName === 'LI');
+                }
+                return [];
+            };
 
+            const childIndex = (p) => {
+                // Given an 'li' position element, return its index among its siblings (0 for first, 1 for second, etc).
+                const parent = p.parentElement.closest('li, #outline-pane'); // include #outline-pane for top-level nodes
+                if (parent) {
+                    const children = Array.from(parent.querySelectorAll(':scope > ul > li'));
+                    return children.indexOf(p);
+                }
+                return 0; // Should not happen for valid nodes because the top nodes are in the #outline-pane div
+            };
+
+            const parents = (p) => {
+                // Given an 'li' position element, return an array of its ancestor 'li' elements, closest first.
+                const ancestors = [];
+                let current = p;
+                while (current) {
+                    const parent = current.parentElement.closest('li');
+                    if (parent) {
+                        ancestors.push(parent);
+                    }
+                    current = parent;
+                }
+                return ancestors;
+            };
+
+            const hasChildren = (p) => {
+                // Given an 'li' position element, return true if it has children.
+                const ul = p.querySelector('ul');
+                return ul && ul.children.length > 0;
+            };
+
+            const numberOfChildren = (p) => {
+                // Given an 'li' position element, return the number of children it has.
+                const ul = p.querySelector('ul');
+                return ul ? ul.children.length : 0;
+            };
+
+            const isCloned = (p) => {
+                // Given an 'li' position element, return true if it is a clone (another node shares its gnx).
+                const gnx = p.getAttribute('data-gnx');
+                let count = 0;
+                document.querySelectorAll(`#outline-pane li[data-gnx="${gnx}"]`).forEach(() => count++);
+                return count > 1;
+            };
+
+            const isExpanded = (p) => {
+                // Given an 'li' position element, return true if it is expanded.
+                return p.getAttribute('data-expanded') === 'true';
+            };
+
+            const isVisible = (p) => {
+                // Given an 'li' position element, return true if all its ancestors are expanded. (but not neccessarily itself)
+                let current = p;
+                while (current) {
+                    const parent = current.parentElement.closest('li');
+                    if (parent) {
+                        if (parent.getAttribute('data-expanded') !== 'true') {
+                            return false;
+                        }
+                    }
+                    current = parent;
+                }
+                return true;
+            };
+
+            const isAncestorOf = (p, p2) => {
+                // Return True if p is one of the direct ancestors of p2.
+                let current = p2;
+                while (current) {
+                    const parent = current.parentElement.closest('li');
+                    if (parent) {
+                        if (parent === p) {
+                            return true;
+                        }
+                    } else {
+                        return false;
+                    }
+                    current = parent;
+                }
+                return false;
+            };
+
+            const level = (p) => {
+                // Given an 'li' position element, return its level (0 for top-level, 1 for children, etc).
+                let lvl = 0;
+                let current = p;
+                while (current) {
+                    const parent = current.parentElement.closest('li');
+                    if (parent) {
+                        lvl++;
+                    }
+                    current = parent;
+                }
+                return lvl;
+            };
+
+            const hasBack = (p) => {
+                // Given an 'li' position element, return true if it has a previous sibling.
+                const parent = p.parentElement.closest('li');
+                if (parent) {
+                    const prev = p.previousElementSibling;
+                    return prev && prev.tagName === 'LI';
+                }
+                return false;
+            };
+
+            const hasNext = (p) => {
+                // Given an 'li' position element, return true if it has a next sibling.
+                const parent = p.parentElement.closest('li');
+                if (parent) {
+                    const next = p.nextElementSibling;
+                    return next && next.tagName === 'LI';
+                }
+                return false;
+            };
+
+            const hasParent = (p) => {
+                // Given an 'li' position element, return true if it has a parent.
+                const parent = p.parentElement.closest('li');
+                return !!parent;
+            };
+
+            const hasThreadBack = (p) => {
+                // Much cheaper than computing the actual value.
+                return hasBack(p) || hasParent(p);
+            }
+
+            const moveToBack = (p) => {
+                // Given an 'li' position element, return its previous 'li' sibling. If first, or no parent, return null.
+                const parent = p.parentElement.closest('li');
+                if (parent) {
+                    const prev = p.previousElementSibling;
+                    if (prev && prev.tagName === 'LI') {
+                        return prev;
+                    }
+                }
+                return null;
+            };
+
+            const moveToFirstChild = (p) => {
+                // Given an 'li' position element, return its first child 'li' if any. Else return null.
+                const ul = p.querySelector('ul');
+                if (ul && ul.children.length > 0) {
+                    return ul.children[0];
+                }
+                return null;
+            };
+
+            const moveToLastChild = (p) => {
+                // Given an 'li' position element, return its last child 'li' if any. Else return null.
+                const ul = p.querySelector('ul');
+                if (ul && ul.children.length > 0) {
+                    return ul.children[ul.children.length - 1];
+                }
+                return null;
+            };
+
+            const moveToLastNode = (p) => {
+                // Given an 'li' position element, return the last node of its tree or itself if no children.
+                let current = p;
+                while (hasChildren(current)) {
+                    current = moveToLastChild(current);
+                }
+                return current;
+            };
+
+            const moveToNext = (p) => {
+                // Given an 'li' position element, return its next sibling. If already last, return null.
+                const parent = p.parentElement.closest('li');
+                if (parent) {
+                    const next = p.nextElementSibling;
+                    if (next && next.tagName === 'LI') {
+                        return next;
+                    }
+                }
+                return null;
+            };
+
+            const moveToNodeAfterTree = (p) => {
+                // Given an 'li' position element, return the node after the position's tree.
+                // TODO , the original python from the Leo Editor is
+                /*
+                    while p:
+                        if p.hasNext():
+                            p.moveToNext()
+                            break
+                        p.moveToParent()
+                    return p
+                */
+
+            };
+
+            const moveToNthChild = (p, n) => {
+                // Given an 'li' position element, return its nth child 'li' if it exists. Else return null.
+                const ul = p.querySelector('ul');
+                if (ul && ul.children.length > n) {
+                    return ul.children[n];
+                }
+                return null;
+            };
+
+            const moveToParent = (p) => {
+                // Given an 'li' position element, return its parent 'li' if any. Else return null.
+                const parent = p.parentElement.closest('li');
+                if (parent) {
+                    return parent;
+                }
+                return null;
+            };
+
+            // Keyboard navigation and focus management
             outlineDiv.addEventListener('dblclick', (event) => {
                 if (event.target.classList.contains('node-text')) {
                     console.log(`Double-Clicked on ${event.target.textContent} TODO: allow rename and copy to clones if any on enter/escape/blur`);
@@ -220,6 +440,44 @@
                 if (e.key === 'Tab' && !e.ctrlKey && !e.altKey && !e.metaKey) {
                     e.preventDefault();
                     bodyDiv.focus();
+                }
+
+                // Arrow keys
+                else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    // TODO: Navigate to previous visible node in outline
+                }
+                else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    // TODO: Navigate to next visible node in outline
+                }
+                else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    // TODO: Collapse current node if expanded, or navigate to parent
+                }
+                else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    // TODO: Expand current node if collapsed, or navigate to first child
+                }
+
+                // Page navigation
+                else if (e.key === 'PageUp') {
+                    e.preventDefault();
+                    // TODO: Navigate multiple nodes up (viewport height)
+                }
+                else if (e.key === 'PageDown') {
+                    e.preventDefault();
+                    // TODO: Navigate multiple nodes down (viewport height)
+                }
+
+                // Home/End
+                else if (e.key === 'Home') {
+                    e.preventDefault();
+                    // TODO: Navigate to first node in outline
+                }
+                else if (e.key === 'End') {
+                    e.preventDefault();
+                    // TODO: Navigate to last visible node in outline
                 }
             });
 
