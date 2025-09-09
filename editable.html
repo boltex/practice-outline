@@ -125,8 +125,7 @@
         }
 
         /* Collapse children when needed */
-        li[data-expanded="false"]>ul,
-        li:has(> ul:empty)>ul {
+        li[data-expanded="false"]>ul {
             display: none;
         }
     </style>
@@ -187,7 +186,7 @@
 
     <div id="resizer"></div>
 
-    <div id="body-pane" tabindex="0"></div>
+    <div id="body-pane" tabindex="0" contenteditable="plaintext-only"></div>
 
     <script>
         const bodies = {
@@ -431,20 +430,9 @@
             };
 
             // Keyboard navigation and focus management
-            outlineDiv.addEventListener("mousedown", e => {
-                if (e.detail === 2) e.preventDefault();
-            });
-
             outlineDiv.addEventListener('dblclick', (event) => {
                 if (event.target.classList.contains('node-text')) {
-                    // prevent default so that no text is selected
-                    event.preventDefault();
-                    event.stopImmediatePropagation();
-
-                    // expand/collapse on double-click of text
-                    const li = event.target.parentElement;
-                    const expanded = li.getAttribute('data-expanded') === 'true';
-                    li.setAttribute('data-expanded', !expanded);
+                    console.log(`Double-Clicked on ${event.target.textContent} TODO: allow rename and copy to clones if any on enter/escape/blur`);
                 }
             });
 
@@ -583,6 +571,12 @@
 
                 // Remove previous ancestor highlights
                 document.querySelectorAll("#outline-pane li.ancestor").forEach(a => a.classList.remove("ancestor"));
+
+                // The body-pane is contenteditable, so grab its content before changing focus
+                if (selectedLi) {
+                    const prevGnx = selectedLi.getAttribute("data-gnx");
+                    bodies[prevGnx] = bodyDiv.textContent;
+                }
 
                 li.classList.add("selected");
                 selectedLi = li;
