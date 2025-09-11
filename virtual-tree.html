@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Virtualised Tree (Vanilla JS)</title>
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+
+        #tree-container {
+            width: 300px;
+            height: 300px;
+            /* viewport height */
+            overflow-y: auto;
+            border: 1px solid #999;
+            position: relative;
+        }
+
+        .tree-node {
+            position: absolute;
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+        }
+    </style>
+</head>
+
+<body>
+    <h3>Virtualised Tree Demo</h3>
+    <div id="tree-container"></div>
+
+    <script>
+        // Generate a large tree automatically
+        function generateTree(depth, breadth, prefix = "Node", idCounter = { value: 1 }) {
+            const node = {
+                id: idCounter.value++,
+                label: `${prefix}-${idCounter.value}`,
+                children: []
+            };
+            if (depth > 0) {
+                for (let i = 0; i < breadth; i++) {
+                    node.children.push(generateTree(depth - 1, breadth, prefix, idCounter));
+                }
+            } else {
+                delete node.children; // leaf
+            }
+            return node;
+        }
+
+        // Example: depth=3, breadth=5 => ~156 nodes
+        // For bigger demo, depth=3, breadth=20 => ~8,000 nodes
+        const tree = generateTree(3, 20);
+
+        // Track expanded nodes
+        const expanded = new Set([1]); // Root expanded initially
+
+        // Flatten tree into visible rows
+        function flattenTree(node, expandedSet, depth = 0) {
+            const rows = [{
+                id: node.id,
+                label: node.label,
+                depth,
+                hasChildren: !!node.children,
+                isExpanded: expandedSet.has(node.id),
+                node
+            }];
+            if (expandedSet.has(node.id) && node.children) {
+                for (const child of node.children) {
+                    rows.push(...flattenTree(child, expandedSet, depth + 1));
+                }
+            }
+            return rows;
+        }
+
+        // Constants
+        const ROW_HEIGHT = 24;
+        const VIEWPORT = document.getElementById("tree-container");
+
+        // State
+        let flatRows = flattenTree(tree, expanded);
+
+        // Render visible rows only
+        function renderTree() {
+            const scrollTop = VIEWPORT.scrollTop;
+            const viewportHeight = VIEWPORT.clientHeight;
+
+            const startIndex = Math.floor(scrollTop / ROW_HEIGHT);
+            const visibleCount = Math.ceil(viewportHeight / ROW_HEIGHT) + 1;
+            const endIndex = Math.min(flatRows.length, startIndex + visibleCount);
+
+            // Spacer div to simulate full height
+            VIEWPORT.innerHTML = "";
+            const spacer = document.createElement("div");
+            spacer.style.height = flatRows.length * ROW_HEIGHT + "px";
+            spacer.style.position = "relative";
+            VIEWPORT.appendChild(spacer);
+
+            for (let i = startIndex; i < endIndex; i++) {
+                const row = flatRows[i];
+                const div = document.createElement("div");
+                div.className = "tree-node";
+                div.style.top = (i * ROW_HEIGHT) + "px";
+                div.style.left = (row.depth * 20) + "px";
+                div.style.height = ROW_HEIGHT + "px";
+                div.textContent = (row.hasChildren ? (row.isExpanded ? "▼ " : "▶ ") : "• ") + row.label;
+
+                div.onclick = (e) => {
+                    e.stopPropagation();
+                    if (row.hasChildren) {
+                        if (expanded.has(row.id)) {
+                            expanded.delete(row.id);
+                        } else {
+                            expanded.add(row.id);
+                        }
+                        flatRows = flattenTree(tree, expanded);
+                        renderTree();
+                    }
+                };
+
+                spacer.appendChild(div);
+            }
+        }
+
+        // Scroll handler
+        VIEWPORT.addEventListener("scroll", renderTree);
+
+        // Initial render
+        renderTree();
+    </script>
+</body>
+
+</html>
