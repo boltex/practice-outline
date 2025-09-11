@@ -51,22 +51,21 @@
 
         // Example: depth=3, breadth=5 => ~156 nodes
         // For bigger demo, depth=3, breadth=20 => ~8,000 nodes
-        const tree = generateTree(3, 20);
+        const tree = generateTree(3, 5);
 
         // Track expanded nodes
-        const expanded = new Set([1]); // Root expanded initially
+        const expanded = new Set([tree]); // Root expanded initially
 
         // Flatten tree into visible rows
         function flattenTree(node, expandedSet, depth = 0) {
             const rows = [{
-                id: node.id,
                 label: node.label,
                 depth,
                 hasChildren: !!node.children,
-                isExpanded: expandedSet.has(node.id),
+                isExpanded: expandedSet.has(node),
                 node
             }];
-            if (expandedSet.has(node.id) && node.children) {
+            if (expandedSet.has(node) && node.children) {
                 for (const child of node.children) {
                     rows.push(...flattenTree(child, expandedSet, depth + 1));
                 }
@@ -109,10 +108,10 @@
                 div.onclick = (e) => {
                     e.stopPropagation();
                     if (row.hasChildren) {
-                        if (expanded.has(row.id)) {
-                            expanded.delete(row.id);
+                        if (expanded.has(row.node)) {
+                            expanded.delete(row.node);
                         } else {
-                            expanded.add(row.id);
+                            expanded.add(row.node);
                         }
                         flatRows = flattenTree(tree, expanded);
                         renderTree();
