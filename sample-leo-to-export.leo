@@ -6,7 +6,7 @@
 <preferences/>
 <find_panel_settings/>
 <vnodes>
-<v t="felix.20250908222018.2"><vh>first node no body</vh></v>
+<v t="felix.20250908222018.2"><vh>first node</vh></v>
 <v t="felix.20250908222032.1"><vh>second node</vh>
 <v t="felix.20250908222032.2"><vh>First child</vh></v>
 <v t="felix.20250908222032.3"><vh>another same level</vh></v>

@@ -134,49 +134,61 @@
 
 <body>
     <!-- 
+                ======================================================
+                ||   Welcome, traveler of the source frontier!      ||
+                ||   You’ve stumbled upon a Leo file viewer.        ||
+                ||                                                  ||
+                ||   Created by Félix Malboeuf                      ||
+                ||   Inspired by the work of Edward K. Ream         ||
+                ||   (Author of the original Leo Editor)            ||
+                ======================================================
+
     'li' elements represent nodes. They each have a caret, text span and a single 'ul' for children.
-    data-id distinguishes node positions, the data-gnx identifies body content.
-    1 body can be used in multiple positions (nodes) that's why data-id and data-gnx differ.
-    (TODO: data-id MAY be omitted if not needed.)
-    data-expanded controls whether children are shown or hidden.
-    Clicking the caret expands/collapses and selects the node. Clickng the text selects only.
+    
+    'data-gnx' identifies body content: 1 body (gnx) can be used in multiple positions (i.e. clones)
+    'data-expanded' controls whether children are shown or hidden.
+
+    Clicking the caret expands/collapses and selects the node. Clicking the text selects only. 
+    Double-clicking the text also expands/collapses the node.
+
+    Arrow keys, Home/End, PageUp/PageDown, Enter/Space and Alt-Minus are also supported.
     -->
     <div id="outline-pane" tabindex="0">
         <ul>
-            <li data-id="1" data-gnx="1" data-expanded="false">
+            <li data-gnx="1" data-expanded="false">
                 <span class="caret"></span><span class="node-text">Section 1</span>
                 <ul>
-                    <li data-id="2" data-gnx="2" data-expanded="false">
+                    <li data-gnx="2" data-expanded="false">
                         <span class="caret"></span><span class="node-text">Page A</span>
                         <ul>
-                            <li data-id="3" data-gnx="3" data-expanded="false">
+                            <li data-gnx="3" data-expanded="false">
                                 <span class="caret"></span><span class="node-text">Subpage A.1</span>
                                 <ul></ul>
                             </li>
-                            <li data-id="4" data-gnx="4" data-expanded="false">
+                            <li data-gnx="4" data-expanded="false">
                                 <span class="caret"></span><span class="node-text">Subpage A.2</span>
                                 <ul></ul>
                             </li>
                         </ul>
                     </li>
-                    <li data-id="5" data-gnx="5" data-expanded="false">
+                    <li data-gnx="5" data-expanded="false">
                         <span class="caret"></span><span class="node-text">Page B</span>
                         <ul></ul>
                     </li>
                 </ul>
             </li>
-            <li data-id="6" data-gnx="6" data-expanded="false">
+            <li data-gnx="6" data-expanded="false">
                 <span class="caret"></span><span class="node-text">Section 2</span>
                 <ul>
-                    <li data-id="7" data-gnx="7" data-expanded="false">
+                    <li data-gnx="7" data-expanded="false">
                         <span class="caret"></span><span class="node-text">Page C (Repeated)</span>
                         <ul></ul>
                     </li>
-                    <li data-id="8" data-gnx="8" data-expanded="false">
+                    <li data-gnx="8" data-expanded="false">
                         <span class="caret"></span><span class="node-text">Page D</span>
                         <ul></ul>
                     </li>
-                    <li data-id="9" data-gnx="7" data-expanded="false">
+                    <li data-gnx="7" data-expanded="false">
                         <span class="caret"></span><span class="node-text">Page C (Repeated)</span>
                         <ul></ul>
                     </li>
@@ -318,7 +330,7 @@
 
             const hasBack = (p) => {
                 // Given an 'li' position element, return true if it has a previous sibling.
-                const parent = p.parentElement.closest('li');
+                const parent = p.parentElement.closest('li, #outline-pane'); // include #outline-pane for top-level nodes
                 if (parent) {
                     const prev = p.previousElementSibling;
                     return prev && prev.tagName === 'LI';
@@ -328,7 +340,7 @@
 
             const hasNext = (p) => {
                 // Given an 'li' position element, return true if it has a next sibling.
-                const parent = p.parentElement.closest('li');
+                const parent = p.parentElement.closest('li, #outline-pane'); // include #outline-pane for top-level nodes
                 if (parent) {
                     const next = p.nextElementSibling;
                     return next && next.tagName === 'LI';
@@ -349,7 +361,7 @@
 
             const moveToBack = (p) => {
                 // Given an 'li' position element, return its previous 'li' sibling. If first, or no parent, return null.
-                const parent = p.parentElement.closest('li');
+                const parent = p.parentElement.closest('li, #outline-pane');
                 if (parent) {
                     const prev = p.previousElementSibling;
                     if (prev && prev.tagName === 'LI') {
@@ -388,7 +400,7 @@
 
             const moveToNext = (p) => {
                 // Given an 'li' position element, return its next sibling. If already last, return null.
-                const parent = p.parentElement.closest('li');
+                const parent = p.parentElement.closest('li, #outline-pane');
                 if (parent) {
                     const next = p.nextElementSibling;
                     if (next && next.tagName === 'LI') {
@@ -400,16 +412,14 @@
 
             const moveToNodeAfterTree = (p) => {
                 // Given an 'li' position element, return the node after the position's tree.
-                // TODO , the original python from the Leo Editor is
-                /*
-                    while p:
-                        if p.hasNext():
-                            p.moveToNext()
-                            break
-                        p.moveToParent()
-                    return p
-                */
-
+                while (p) {
+                    if (hasNext(p)) {
+                        p = moveToNext(p);
+                        break;
+                    }
+                    p = moveToParent(p);
+                }
+                return p;
             };
 
             const moveToNthChild = (p, n) => {
@@ -429,6 +439,213 @@
                 }
                 return null;
             };
+
+            const moveToThreadBack = (p) => {
+                // Given an 'li' position element, return the previous node in the outline.
+                if (hasBack(p)) {
+                    p = moveToBack(p);
+                    p = moveToLastNode(p);
+                } else {
+                    p = moveToParent(p);
+                }
+                return p;
+            };
+
+            const moveToThreadNext = (p) => {
+                // Given an 'li' position element, return the next node in the outline.
+                if (hasChildren(p)) {
+                    p = moveToFirstChild(p);
+                } else if (hasNext(p)) {
+                    p = moveToNext(p);
+                } else {
+                    p = moveToParent(p);
+                    while (p) {
+                        if (p && hasNext(p)) {
+                            p = moveToNext(p);
+                            break;
+                        }
+                        p = moveToParent(p);
+                    }
+                }
+                return p;
+            };
+
+            const moveToVisBack = (p) => {
+                // Given an 'li' position element, return the previous visible node in the outline.
+                while (p) {
+                    // Short-circuit if possible.
+                    const back = moveToBack(p);
+                    if (back && hasChildren(back) && isExpanded(back))
+                        p = moveToThreadBack(p);
+                    else if (back) {
+                        p = moveToBack(p);
+                    } else {
+                        p = moveToParent(p);  // Same as p.moveToThreadBack()
+                    }
+                    if (p && isVisible(p)) {
+                        return p;
+                    }
+                }
+                return p;
+            };
+
+            const moveToVisNext = (p) => {
+                // Given an 'li' position element, return the next visible node in the outline.
+                while (p) {
+                    if (hasChildren(p)) {
+                        if (isExpanded(p)) {
+                            p = moveToFirstChild(p);
+                        } else {
+                            p = moveToNodeAfterTree(p);
+                        }
+                    } else if (hasNext(p)) {
+                        p = moveToNext(p);
+                    } else {
+                        p = moveToThreadNext(p);
+                    }
+                    if (p && isVisible(p)) {
+                        return p;
+                    }
+                }
+            };
+
+            const expandNodeAndGoToFirstChild = () => {
+                // If the presently selected has children, expand it if needed and go to the first child.
+                let p = selectedLi
+                if (hasChildren(p)) {
+                    if (!isExpanded(p)) {
+                        p.setAttribute('data-expanded', 'true');
+                    }
+                    p = moveToFirstChild(p);
+                    selectNode(p);
+                }
+            }
+
+            const contractNodeOrGoToParent = () => {
+                // If the presently selected node is expanded, collapse it. Otherwise go to the parent.
+                let p = selectedLi
+                if (hasChildren(p) && isExpanded(p)) {
+                    p.setAttribute('data-expanded', 'false');
+                } else if (hasParent(p)) {
+                    const parent = moveToParent(p);
+                    if (isVisible(parent)) {
+                        // Contract all children first
+                        for (const child of children(parent)) {
+                            if (isExpanded(child)) {
+                                child.setAttribute('data-expanded', 'false')
+                            }
+                        }
+                        selectNode(parent);
+                    }
+                }
+            }
+
+            const selectVisBack = () => {
+                // Select the visible node preceding the presently selected node.
+                let p = selectedLi
+                if (moveToVisBack(p)) {
+                    p = moveToVisBack(p);
+                    selectNode(p);
+                }
+            }
+
+            const selectVisNext = () => {
+                // Select the visible node following the presently selected node.
+                let p = selectedLi
+                if (moveToVisNext(p)) {
+                    p = moveToVisNext(p);
+                    selectNode(p);
+                }
+            }
+
+            const goToFirstSibling = () => {
+                // Select the first sibling of the presently selected node.
+                let p = selectedLi;
+                if (hasBack(p)) {
+                    while (hasBack(p)) {
+                        p = moveToBack(p);
+                    }
+                }
+                selectNode(p);
+            };
+
+            const goToLastSibling = () => {
+                // Select the last sibling of the presently selected node.
+                let p = selectedLi;
+                if (hasNext(p)) {
+                    while (hasNext(p)) {
+                        p = moveToNext(p);
+                    }
+                }
+                selectNode(p);
+            };
+
+            const gotoFirstSiblingOrParent = () => {
+                // Select the first sibling of the presently selected node, or its parent if already first.
+                let p = selectedLi;
+                if (hasBack(p)) {
+                    while (hasBack(p)) {
+                        p = moveToBack(p);
+                    }
+                } else if (hasParent(p)) {
+                    // No need to check visibility, parent always is.
+                    p = moveToParent(p);
+                }
+                selectNode(p);
+            };
+
+            const goToLastSiblingOrVisNext = () => {
+                // Select the last sibling of the presently selected node, or the next visible node if already last.
+                let p = selectedLi;
+                if (hasNext(p)) {
+                    while (hasNext(p)) {
+                        p = moveToNext(p);
+                    }
+                } else if (moveToVisNext(p)) {
+                    p = moveToVisNext(p);
+                }
+                if (p) selectNode(p);
+            };
+
+            const gotoFirstVisibleNode = () => {
+                // Select the first visible node in the outline.
+                const firstNode = outlineDiv.querySelector('li');
+                if (firstNode) {
+                    // No need to check visibility, first node always is.
+                    selectNode(firstNode);
+                }
+            };
+
+            const goToLastVisibleNode = () => {
+                // Select the last visible node in the outline.
+                let p = selectedLi;
+                while (p) {
+                    const next = moveToVisNext(p);
+                    if (next && isVisible(next)) {
+                        p = next;
+                    } else {
+                        break;
+                    }
+                }
+                if (p) selectNode(p);
+            };
+
+            const collapseAll = () => {
+                // Collapse all nodes in outline and select the proper top-level node
+                lis.forEach(li => li.setAttribute('data-expanded', 'false'));
+                let p = selectedLi;
+                while (p && hasParent(p)) {
+                    p = moveToParent(p);
+                }
+                if (p) selectNode(p);
+            };
+
+            const toggleSelected = () => {
+                if (selectedLi) {
+                    const expanded = selectedLi.getAttribute('data-expanded') === 'true';
+                    selectedLi.setAttribute('data-expanded', expanded ? 'false' : 'true');
+                }
+            }
 
             // Keyboard navigation and focus management
             outlineDiv.addEventListener("mousedown", e => {
@@ -452,44 +669,36 @@
                 if (e.key === 'Tab' && !e.ctrlKey && !e.altKey && !e.metaKey) {
                     e.preventDefault();
                     bodyDiv.focus();
-                }
-
-                // Arrow keys
-                else if (e.key === 'ArrowUp') {
+                } else if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    // TODO: Navigate to previous visible node in outline
-                }
-                else if (e.key === 'ArrowDown') {
+                    toggleSelected();
+                } else if (e.key === 'ArrowUp') {
                     e.preventDefault();
-                    // TODO: Navigate to next visible node in outline
-                }
-                else if (e.key === 'ArrowLeft') {
+                    selectVisBack();
+                } else if (e.key === 'ArrowDown') {
                     e.preventDefault();
-                    // TODO: Collapse current node if expanded, or navigate to parent
-                }
-                else if (e.key === 'ArrowRight') {
+                    selectVisNext();
+                } else if (e.key === 'ArrowLeft') {
                     e.preventDefault();
-                    // TODO: Expand current node if collapsed, or navigate to first child
-                }
-
-                // Page navigation
-                else if (e.key === 'PageUp') {
+                    contractNodeOrGoToParent();
+                } else if (e.key === 'ArrowRight') {
                     e.preventDefault();
-                    // TODO: Navigate multiple nodes up (viewport height)
-                }
-                else if (e.key === 'PageDown') {
+                    expandNodeAndGoToFirstChild();
+                } else if (e.key === 'PageUp') {
                     e.preventDefault();
-                    // TODO: Navigate multiple nodes down (viewport height)
-                }
-
-                // Home/End
-                else if (e.key === 'Home') {
+                    gotoFirstSiblingOrParent();
+                } else if (e.key === 'PageDown') {
                     e.preventDefault();
-                    // TODO: Navigate to first node in outline
-                }
-                else if (e.key === 'End') {
+                    goToLastSiblingOrVisNext();
+                } else if (e.key === 'Home') {
                     e.preventDefault();
-                    // TODO: Navigate to last visible node in outline
+                    gotoFirstVisibleNode();
+                } else if (e.key === 'End') {
+                    e.preventDefault();
+                    goToLastVisibleNode();
+                } else if (e.key === '-' && e.altKey && !e.ctrlKey && !e.metaKey) {
+                    e.preventDefault();
+                    collapseAll();
                 }
             });
 

@@ -4,44 +4,16 @@
   },
   "vnodes": [
     {
-      "gnx": "felix.20250907225434.1",
-      "vh": "top node",
-      "children": [
-        {
-          "gnx": "felix.20250907225454.1",
-          "vh": "First child"
-        },
-        {
-          "gnx": "felix.20250907234546.1",
-          "vh": "another same level"
-        },
-        {
-          "gnx": "felix.20250908201406.1",
-          "vh": "top node",
-          "children": [
-            {
-              "gnx": "felix.20250908201406.2",
-              "vh": "First child"
-            },
-            {
-              "gnx": "felix.20250908201406.3",
-              "vh": "another same level"
-            },
-            {
-              "gnx": "felix.20250908201406.4",
-              "vh": "another same level"
-            }
-          ]
-        },
-        {
-          "gnx": "felix.20250908201130.1",
-          "vh": "another same level"
-        }
-      ]
+      "gnx": "felix.20250909222156.1",
+      "vh": "notes"
     },
     {
       "gnx": "felix.20250907225515.1",
       "vh": "test script"
+    },
+    {
+      "gnx": "felix.20250910212852.1",
+      "vh": "test script vnode"
     },
     {
       "gnx": "felix.20250908213416.1",
@@ -49,15 +21,9 @@
     }
   ],
   "tnodes": {
-    "felix.20250907225434.1": "Some body content\n",
-    "felix.20250907225454.1": "Some child content\nmultiple lines\n\nend",
-    "felix.20250907234546.1": "inside other at same level",
-    "felix.20250908201406.1": "Some body content\n",
-    "felix.20250908201406.2": "\nSome child content",
-    "felix.20250908201406.3": "inside other at same level",
-    "felix.20250908201406.4": "inside other at same level",
-    "felix.20250908201130.1": "inside other at same level",
+    "felix.20250909222156.1": "\n\n\n\nUP    goto-prev-visible   selectVisBack\nDOWN  goto-next-visible   selectVisNext\n\nLEFT  contract-or-go-left  contractNodeOrGoToParent\nRIGHT expand-and-go-right  expandNodeAndGoToFirstChild\n\nHOME  gotoFirstVisible\nEND   gotoLastVisible\n\nPGUP\n\npublic treePageUp(this: Commands): void {\n    const c: Commands = this;\n    const parent: Position = c.p.parent();\n    if (!parent.__bool__()) {\n        c.goToFirstSibling();\n        return;\n    }\n    const siblings: Position[] = [...parent.children()];\n    const firstSibling = siblings[0];\n    if (firstSibling.__eq__(c.p)) {\n        c.selectVisBack(); // already first sibling\n    } else {\n        c.goToFirstSibling();\n    }\n}\n\n\nPGDN\n\npublic treePageDown(this: Commands): void {\n    const c: Commands = this;\n    const parent: Position = c.p.parent();\n    if (!parent.__bool__()) {\n        c.goToLastSibling();\n        return;\n    }\n    const siblings: Position[] = [...parent.children()];\n    const lastSibling = siblings[siblings.length - 1];\n    if (lastSibling.__eq__(c.p)) {\n        c.selectVisNext(); // already last sibling\n    } else {\n        c.goToLastSibling();\n    }\n}\n\n\n",
     "felix.20250907225515.1": "@language typescript\n\n\n// Convert to an HTML structure like this one:\n/*\n    <!-- \n    'li' elements represent nodes. They each have a caret, text span and a single 'ul' for children.\n    data-id distinguishes node positions, the data-gnx identifies body content.\n    1 body can be used in multiple positions (nodes) that's why data-id and data-gnx differ.\n    (TODO: data-id MAY be omitted if not needed.)\n    data-expanded controls whether children are shown or hidden.\n    Clicking the caret expands/collapses and selects the node. Clickng the text selects only.\n    -->\n    <div id=\"outline-pane\" tabindex=\"0\">\n        <ul>\n            <li data-id=\"1\" data-gnx=\"1\" data-expanded=\"false\">\n                <span class=\"caret\"></span><span class=\"node-text\">Section 1</span>\n                <ul>\n                    <li data-id=\"2\" data-gnx=\"2\" data-expanded=\"false\">\n                        <span class=\"caret\"></span><span class=\"node-text\">Page A</span>\n                        <ul>\n                            <li data-id=\"3\" data-gnx=\"3\" data-expanded=\"false\">\n                                <span class=\"caret\"></span><span class=\"node-text\">Subpage A.1</span>\n                                <ul></ul>\n                            </li>\n                            <li data-id=\"4\" data-gnx=\"4\" data-expanded=\"false\">\n                                <span class=\"caret\"></span><span class=\"node-text\">Subpage A.2</span>\n                                <ul></ul>\n                            </li>\n                        </ul>\n                    </li>\n                    <li data-id=\"5\" data-gnx=\"5\" data-expanded=\"false\">\n                        <span class=\"caret\"></span><span class=\"node-text\">Page B</span>\n                        <ul></ul>\n                    </li>\n                </ul>\n            </li>\n            <li data-id=\"6\" data-gnx=\"6\" data-expanded=\"false\">\n                <span class=\"caret\"></span><span class=\"node-text\">Section 2</span>\n                <ul>\n                    <li data-id=\"7\" data-gnx=\"7\" data-expanded=\"false\">\n                        <span class=\"caret\"></span><span class=\"node-text\">Page C (Repeated)</span>\n                        <ul></ul>\n                    </li>\n                    <li data-id=\"8\" data-gnx=\"8\" data-expanded=\"false\">\n                        <span class=\"caret\"></span><span class=\"node-text\">Page D</span>\n                        <ul></ul>\n                    </li>\n                    <li data-id=\"9\" data-gnx=\"7\" data-expanded=\"false\">\n                        <span class=\"caret\"></span><span class=\"node-text\">Page C (Repeated)</span>\n                        <ul></ul>\n                    </li>\n                </ul>\n            </li>\n        </ul>\n    </div>\n\n\n*/\n\nlet currentLevel = -1; // Start \"before\" the root level.\n// Start the output with the opening <div> and <ul>\nlet output = `<div id=\"outline-pane\" tabindex=\"0\">\n    <ul>`;\nconst indentation = '        ';\nlet nodeTotal = 0; // To generate unique data-id values.\n\n// Recursive function to generate the HTML structure\nconst doChildren = (children) => {\n    \n    nodeTotal += 1;\n\n    for(const child of children){\n\n        output += `\\n${indentation.repeat(child.level()+1)}<li data-id=\"${nodeTotal}\" data-gnx=\"${child.gnx}\" data-expanded=\"false\">\n${indentation.repeat(child.level()+1)}    <span class=\"caret\"></span><span class=\"node-text\">${child.h}</span>\n${indentation.repeat(child.level()+1)}    <ul>`;\n        doChildren(child.children());    \n        output += `\\n${indentation.repeat(child.level()+1)}    </ul>\n${indentation.repeat(child.level()+1)}</li>`;\n\n    }\n        \n   \n};\n\ndoChildren(c.all_Root_Children());\n\n// // c is already defined as the current commander.\n// for( const p of c.all_positions()){\n//     nodeTotal += 1;\n//     // g.es(`Processing node number:${nodeTotal} ${p.h} at level ${p.level()}`);\n//     if(p.level() > currentLevel){\n//         // We are going deeper in the tree, the first child of the previous node.\n//         // Increase current level\n//         currentLevel = p.level();\n//         // Open a new <li>\n//         output += `\\n${indentation.repeat(currentLevel+1)}<li data-id=\"${nodeTotal}\" data-gnx=\"${p.gnx}\" data-expanded=\"false\">\n// ${indentation.repeat(currentLevel+1)}    <span class=\"caret\"></span><span class=\"node-text\">${p.h}</span>\n// ${indentation.repeat(currentLevel+1)}    <ul>`;\n//         // Leaving current level as is, we are now inside the new <ul>, ready for any children.\n//     }else if(p.level() < currentLevel){\n//         // Close one or more <ul> and <li>\n//         while(currentLevel > p.level()){\n//             output += `\\n${indentation.repeat(currentLevel+1)}</ul>\n// ${indentation.repeat(currentLevel+1)}</li>`;\n//             currentLevel -= 1;\n//         }\n//         // Now at the correct level, close previous <li> and open a new one\n//         output += `\\n${indentation.repeat(currentLevel+1)}</ul>\n// ${indentation.repeat(currentLevel+1)}</li>`;\n//         output += `\\n${indentation.repeat(currentLevel+1)}<li data-id=\"${nodeTotal}\" data-gnx=\"${p.gnx}\" data-expanded=\"false\">\n// ${indentation.repeat(currentLevel+1)}    <span class=\"caret\"></span><span class=\"node-text\">${p.h}</span>\n// ${indentation.repeat(currentLevel+1)}    <ul>`;\n//         // Leaving current level as is, we are now inside the new <ul>, ready for any children.\n//     }else{\n//         // Same level, close previous <li> and open a new one\n//         output += `\\n${indentation.repeat(currentLevel+1)}    </ul>\n// ${indentation.repeat(currentLevel+1)}</li>`;\n//         output += `\\n${indentation.repeat(currentLevel+1)}<li data-id=\"${nodeTotal}\" data-gnx=\"${p.gnx}\" data-expanded=\"false\">\n// ${indentation.repeat(currentLevel+1)}    <span class=\"caret\"></span><span class=\"node-text\">${p.h}</span>\n// ${indentation.repeat(currentLevel+1)}    <ul>`;\n//     }\n// }\n// // Set level to 0 and close remaining open tags\n// while(currentLevel > -1){\n//     output += `\\n${indentation.repeat(currentLevel+1)}    </ul>\n// ${indentation.repeat(currentLevel+1)}</li>`;\n//     currentLevel -= 1;\n// }\n\n// Close the opening <ul> and <div>\noutput += `\\n    </ul>\n</div>`;\n\ng.es( output);\n\noutput = \"\";\n// Now output the json dict of the bodies like so where the key is the gnx:\n/*\n        const bodies = {\n            \"1\": \"Section 1 content here\\nMultiple lines supported.\",\n            \"2\": \"Page A content here\\nMore text.\",\n            \"3\": \"Subpage A.1 content here\",\n            \"4\": \"Subpage A.2 content here\",\n            \"5\": \"Page B content here\",\n            \"6\": \"Section 2 content here\",\n            \"7\": \"Page C (Repeated) content here\\nSame (body content) GNX used twice, with different (position) IDs.\",\n            \"8\": \"Page D content here\"\n        };\n*/\n\noutput += `\\nconst bodies = {`;\nlet first = true;\nfor( const p of c.all_unique_positions()){\n    if(first){\n        first = false;\n    }else{\n        output += `,`;\n    }\n    // Escape backslashes and double quotes in body text\n    const bodyText = p.b ? JSON.stringify(p.b) : ''; // in python use json.dumps(p_b) \ud83d\ude01\n    output += `\\n    \"${p.gnx}\": ${bodyText}`; // Will already be quoted appropriately by JSON.stringify\n}\noutput += `\\n};`;\n// g.es('Done! Bodies output is:\\n' + output);",
-    "felix.20250908213416.1": "@language python\n\noutput = ''\nindentation = '        '\n\ndef AllRootChildren():\n    p = c.rootPosition()\n    while p:\n        yield p\n        p.moveToNext()\n\n# Recursive function to generate the HTML structure\ndef doChildren(children):\n    global output\n    for child in children:\n        output += f\"\\n{indentation * child.level()}    <li>\"\n        output += f\"\\n{indentation * child.level()}        <b>{child.h}</b><br>\"\n        output += f\"\\n{indentation * child.level()}        <pre>{child.b}</pre><br>\"\n        output += f\"\\n{indentation * child.level()}        <ul>\"\n        doChildren(child.children());\n        output += f\"\\n{indentation * child.level()}        </ul>\"\n        output += f\"\\n{indentation * child.level()}    </li>\"\n\n# Start\noutput += \"<ul>\"\ndoChildren(AllRootChildren())\noutput += \"</ul>\"\ng.es(output)\n"
+    "felix.20250910212852.1": "@language python\n\noutput = ''\nindentation = '        '\nlevel = -1\n\n# Recursive function to generate the HTML structure\ndef doChildren(children):\n    global output, level\n    level += 1\n    for child in children:\n        indent = indentation * level\n        output += f\"\\n{indent}    <li>\"\n        output += f\"\\n{indent}        <b>{child.headString()}</b>\"\n        # output += f\"\\n{indent}        <pre>\\n{child.bodyString()}\\n{indent}        </pre>\"\n        output += f\"\\n{indent}        <ul>\"\n        doChildren(child.children)\n        output += f\"\\n{indent}        </ul>\"\n        output += f\"\\n{indent}    </li>\"\n\n# Start\noutput += \"<ul>\"\ndoChildren(c.hiddenRootNode.children)\noutput += \"\\n</ul>\"\ng.es(output)\n",
+    "felix.20250908213416.1": "@language python\n\noutput = ''\nindentation = '        '\n\ndef AllRootChildren():\n    p = c.rootPosition()\n    while p:\n        yield p\n        p.moveToNext()\n\n# Recursive function to generate the HTML structure\ndef doChildren(children):\n    global output\n    for child in children:\n        indent = indentation * child.level()\n        output += f\"\\n{indent}    <li>\"\n        output += f\"\\n{indent}        <b>{child.h}</b>\"\n        output += f\"\\n{indent}        <pre>\\n{child.b}\\n{indent}        </pre>\"\n        output += f\"\\n{indent}        <ul>\"\n        doChildren(child.children())\n        output += f\"\\n{indent}        </ul>\"\n        output += f\"\\n{indent}    </li>\"\n\n# Start\noutput += \"<ul>\"\ndoChildren(AllRootChildren())\noutput += \"\\n</ul>\"\ng.es(output)\n"
   }
 }
