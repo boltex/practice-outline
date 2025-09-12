@@ -48,38 +48,32 @@
             outline-offset: -3px;
         }
 
+        .node-text {
+            display: block;
+            cursor: pointer;
+            padding: 2px 4px;
+            margin-right: 1rem;
+            border-radius: 4px;
+        }
 
         /* Selected + ancestor styles still just target the label */
         .selected>.node-text {
             background: #cae1ff;
         }
 
-
-        /* .position {
-            grid-column: 1 / -1;
-            margin: 0;
-            
-        } */
-
         .position {
             position: absolute;
             white-space: nowrap;
             cursor: pointer;
             user-select: none;
-
             display: grid;
             grid-template-columns: 1em 1fr;
             align-items: start;
-            /* row-gap: 2px; */
-            /* space between the row and its children */
             /* padding: 2px 0; */
         }
 
-
-
         /* Caret stays a small target in the first column */
         .caret {
-            grid-column: 1;
             display: inline-block;
             width: 1em;
             cursor: pointer;
@@ -211,7 +205,7 @@
         }
 
         // Constants
-        const ROW_HEIGHT = 24;
+        const ROW_HEIGHT = 26;
         const LEFT_OFFSET = 16; // Padding from left edge
         const VIEWPORT = document.getElementById("outline-pane");
 
