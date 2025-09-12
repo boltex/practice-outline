@@ -6,31 +6,109 @@
     <title>Virtualised Tree (Vanilla JS)</title>
     <style>
         body {
+            margin: 0;
+            display: flex;
+            height: 100vh;
+        }
+
+        body.dragging {
+            cursor: ew-resize !important;
+        }
+
+        #outline-pane {
+            width: 250px;
+            white-space: nowrap;
+            background: #ffffec;
+            padding: 1rem 0 0 0;
+            overflow-x: hidden;
+            overflow-y: auto;
             font-family: sans-serif;
         }
 
-        #tree-container {
-            width: 300px;
-            height: 300px;
-            /* viewport height */
-            overflow-y: auto;
-            border: 1px solid #999;
-            position: relative;
+        #resizer {
+            width: 5px;
+            cursor: ew-resize;
+            background: #cae1ff;
         }
 
-        .tree-node {
+        #body-pane {
+            flex: 1;
+            padding: 1rem 0 0 1rem;
+            background: #fff6f5;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            white-space: pre-wrap;
+        }
+
+        #outline-pane:focus,
+        #body-pane:focus,
+        #outline-pane:focus-visible,
+        #body-pane:focus-visible {
+            outline: 3px solid blue;
+            outline-offset: -3px;
+        }
+
+
+        /* Selected + ancestor styles still just target the label */
+        .selected>.node-text {
+            background: #cae1ff;
+        }
+
+
+        /* .position {
+            grid-column: 1 / -1;
+            margin: 0;
+            
+        } */
+
+        .position {
             position: absolute;
             white-space: nowrap;
             cursor: pointer;
             user-select: none;
+
+            display: grid;
+            grid-template-columns: 1em 1fr;
+            align-items: start;
+            /* row-gap: 2px; */
+            /* space between the row and its children */
+            /* padding: 2px 0; */
+        }
+
+
+
+        /* Caret stays a small target in the first column */
+        .caret {
+            grid-column: 1;
+            display: inline-block;
+            width: 1em;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        /* Caret glyphs */
+        .caret::after {
+            display: inline-block;
+            transform-origin: 50% 50%;
+            transform: rotate(0deg);
+        }
+
+        .caret[data-expanded="true"]::after {
+            content: "❯";
+            transform: rotate(90deg);
+        }
+
+        .caret[data-expanded="false"]::after {
+            content: "❯";
+            color: #888;
         }
     </style>
 </head>
 
 <body>
-    <h3>Virtualised Tree Demo</h3>
-    <div id="tree-container"></div>
-
+    <div id="outline-pane" tabindex="0"></div>
+    <div id="resizer"></div>
+    <div id="body-pane" tabindex="0"></div>
     <script>
         const tree = {
             "gnx": 0,
@@ -106,25 +184,36 @@
         const expanded = new Set([tree]); // Root expanded initially
 
         // Flatten tree into visible rows
-        function flattenTree(node, expandedSet, depth = 0) {
-            const rows = [{
-                label: data[node.gnx].headString,
-                depth,
-                hasChildren: !!node.children && node.children.length > 0,
-                isExpanded: expandedSet.has(node),
-                node
-            }];
+        function flattenTree(node, expandedSet, depth = 0, isRoot = true) {
+            let rows = [];
+
+            // Only add non-root nodes to the rows
+            if (!isRoot) {
+                rows.push({
+                    label: data[node.gnx].headString,
+                    depth,
+                    hasChildren: !!node.children && node.children.length > 0,
+                    isExpanded: expandedSet.has(node),
+                    node
+                });
+            }
+
+            // If expanded and has children, process them
             if (expandedSet.has(node) && node.children) {
                 for (const child of node.children) {
-                    rows.push(...flattenTree(child, expandedSet, depth + 1));
+                    // Root node's children appear at depth 0
+                    const childDepth = isRoot ? 0 : depth + 1;
+                    rows.push(...flattenTree(child, expandedSet, childDepth, false));
                 }
             }
+
             return rows;
         }
 
         // Constants
         const ROW_HEIGHT = 24;
-        const VIEWPORT = document.getElementById("tree-container");
+        const LEFT_OFFSET = 16; // Padding from left edge
+        const VIEWPORT = document.getElementById("outline-pane");
 
         // State
         let flatRows = flattenTree(tree, expanded);
@@ -148,15 +237,18 @@
             for (let i = startIndex; i < endIndex; i++) {
                 const row = flatRows[i];
                 const div = document.createElement("div");
-                div.className = "tree-node";
+                div.className = "position";
                 div.style.top = (i * ROW_HEIGHT) + "px";
-                div.style.left = (row.depth * 20) + "px";
+                div.style.left = (row.depth * 20) + LEFT_OFFSET + "px";
                 div.style.height = ROW_HEIGHT + "px";
-                div.textContent = (row.hasChildren ? (row.isExpanded ? "▼ " : "▶ ") : "• ") + row.label;
 
-                div.onclick = (e) => {
-                    e.stopPropagation();
-                    if (row.hasChildren) {
+                // Create a caret span element
+                const caret = document.createElement("span");
+                caret.className = "caret";
+                if (row.hasChildren) {
+                    caret.setAttribute("data-expanded", row.isExpanded ? "true" : "false");
+                    caret.onclick = (e) => {
+                        e.stopPropagation();
                         if (expanded.has(row.node)) {
                             expanded.delete(row.node);
                         } else {
@@ -164,8 +256,15 @@
                         }
                         flatRows = flattenTree(tree, expanded);
                         renderTree();
-                    }
-                };
+                    };
+                }
+                div.appendChild(caret);
+
+                // Add the label text
+                const labelSpan = document.createElement("span");
+                labelSpan.className = "node-text";
+                labelSpan.textContent = row.label;
+                div.appendChild(labelSpan);
 
                 spacer.appendChild(div);
             }
