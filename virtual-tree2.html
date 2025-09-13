@@ -9,6 +9,7 @@
             margin: 0;
             display: flex;
             height: 100vh;
+            background: #ffffec;
         }
 
         body.dragging {
@@ -18,7 +19,6 @@
         #outline-pane {
             width: 250px;
             white-space: nowrap;
-            background: #ffffec;
             padding: 1rem 0 0 0;
             overflow-x: hidden;
             overflow-y: auto;
@@ -44,16 +44,44 @@
         #body-pane:focus,
         #outline-pane:focus-visible,
         #body-pane:focus-visible {
+            /* 
+              Note: Outline will appear under the items positioned absolutely.
+              see pseudo-elements with "z-index: -1" that appear below this outline.
+             */
             outline: 3px solid #0000ff;
             outline-offset: -3px;
         }
 
         .selected>.node-text {
+            position: relative;
+        }
+
+        .selected>.node-text::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             background: #cae1ff;
+            z-index: -1;
+            border-radius: 4px;
         }
 
         .ancestor>.node-text {
+            position: relative;
+        }
+
+        .ancestor>.node-text::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             background: #eef5ff;
+            z-index: -1;
+            border-radius: 4px;
         }
 
         .node {
@@ -222,11 +250,13 @@
         const expanded = new Set([tree]); // Root expanded initially
         let selectedNode = null; // Track the currently selected node
         let isDragging = false;
+        const minWidth = 0;
 
         // Constants
         const ROW_HEIGHT = 26;
         const LEFT_OFFSET = 16; // Padding from left edge
-        const VIEWPORT = document.getElementById("outline-pane");
+        const OUTLINE_PANE = document.getElementById("outline-pane");
+        const BODY_PANE = document.getElementById("body-pane");
         const VERTICAL_RESIZER = document.getElementById('vertical-resizer');
 
         // Select first node in the hidden root initially
@@ -250,10 +280,8 @@
                     node
                 });
             }
-
             if (node.toggled) {
-                // Clear the toggled flag after processing
-                node.toggled = false;
+                node.toggled = false; // Reset because it should not persist
             }
 
             // If expanded and has children, process them
@@ -291,11 +319,10 @@
 
             // Update body pane if selection changed
             if (newSelectedNode) {
-                const bodyPane = document.getElementById("body-pane");
                 if (newSelectedNode && data[newSelectedNode.gnx]) {
-                    bodyPane.textContent = data[newSelectedNode.gnx].bodyString || "";
+                    BODY_PANE.textContent = data[newSelectedNode.gnx].bodyString || "";
                 } else {
-                    bodyPane.textContent = "";
+                    BODY_PANE.textContent = "";
                 }
             }
         }
@@ -315,27 +342,24 @@
 
         // Render visible rows only
         function renderTree() {
-            const scrollTop = VIEWPORT.scrollTop;
-            const viewportHeight = VIEWPORT.clientHeight;
-            const viewportWidth = VIEWPORT.clientWidth;
+            const scrollTop = OUTLINE_PANE.scrollTop;
+            const viewportHeight = OUTLINE_PANE.clientHeight;
+            const viewportWidth = OUTLINE_PANE.clientWidth;
 
             const startIndex = Math.floor(scrollTop / ROW_HEIGHT);
             const visibleCount = Math.ceil(viewportHeight / ROW_HEIGHT) + 1;
             const endIndex = Math.min(flatRows.length, startIndex + visibleCount);
 
-            // Spacer div to simulate full height
-            VIEWPORT.innerHTML = "";
-            const spacer = document.createElement("div");
+            OUTLINE_PANE.innerHTML = "";
+            const spacer = document.createElement("div"); // Spacer simulates full height
             spacer.style.height = flatRows.length * ROW_HEIGHT + "px";
             spacer.style.position = "relative";
-            VIEWPORT.appendChild(spacer);
+            OUTLINE_PANE.appendChild(spacer);
 
             for (let i = startIndex; i < endIndex; i++) {
                 const row = flatRows[i];
                 const div = document.createElement("div");
                 div.className = "node";
-
-                // Add selected and ancestor classes
                 if (row.node === selectedNode) {
                     div.classList.add("selected");
                 } else if (selectedNode && isAncestor(row.node, selectedNode)) {
@@ -343,24 +367,22 @@
                 }
 
                 div.style.top = (i * ROW_HEIGHT) + "px";
+                div.style.height = ROW_HEIGHT + "px";
 
                 const leftPosition = (row.depth * 20) + LEFT_OFFSET;
                 div.style.left = leftPosition + "px";
-                div.style.height = ROW_HEIGHT + "px";
+                div.style.width = (viewportWidth - leftPosition) + "px";
 
-                // Calculate and set width directly - efficient approach
-                const availableWidth = viewportWidth - leftPosition;
-                div.style.width = availableWidth + "px";
-
-                // Create a caret span element
                 const caret = document.createElement("span");
                 caret.className = row.toggled ? "caret toggled" : "caret";
+
+                row.toggled = false; // Reset toggled state after rendering
+
                 if (row.hasChildren) {
                     caret.setAttribute("data-expanded", row.isExpanded ? "true" : "false");
                 }
                 div.appendChild(caret);
 
-                // Add the label text
                 const labelSpan = document.createElement("span");
                 labelSpan.className = "node-text";
                 labelSpan.textContent = row.label;
@@ -370,12 +392,91 @@
             }
         }
 
+        function updateProportion() {
+            outlineProportion = OUTLINE_PANE.offsetWidth / window.innerWidth;
+        }
+
+        function throttle(func, limit) {
+            let lastCall = 0;
+            let timeout;
+
+            return function (...args) {
+                const now = Date.now();
+                if (timeout) {
+                    clearTimeout(timeout);
+                }
+                if (now - lastCall >= limit) {
+                    lastCall = now;
+                    func.apply(this, args);
+                } else {
+                    timeout = setTimeout(() => {
+                        lastCall = Date.now();
+                        func.apply(this, args);
+                    }, limit - (now - lastCall));
+                }
+            };
+        }
+
+        function updateOutlineWidth() {
+            let newWidth = window.innerWidth * outlineProportion;
+            // Respect minimum width
+            if (newWidth < minWidth) {
+                newWidth = minWidth;
+            }
+            OUTLINE_PANE.style.width = `${newWidth}px`;
+            renderTree();
+        }
+
+        const handleDrag = throttle(function (e) {
+            let clientX = e.clientX;
+            if (e.touches) {
+                clientX = e.touches[0].clientX;
+            }
+
+            const newWidth = clientX;
+            if (newWidth >= minWidth) {
+                OUTLINE_PANE.style.width = newWidth + 'px';
+            } else {
+                OUTLINE_PANE.style.width = minWidth + 'px';
+            }
+            renderTree();
+        }, 67);
+
+        function startDrag(e) {
+            isDragging = true;
+            document.body.classList.add('dragging');
+            e.preventDefault();
+            document.addEventListener('mousemove', handleDrag);
+            document.addEventListener('mouseup', stopDrag);
+            document.addEventListener('touchmove', handleDrag, { passive: false });
+            document.addEventListener('touchend', stopDrag);
+        }
+
+        function stopDrag() {
+            if (isDragging) {
+                isDragging = false;
+                document.body.classList.remove('dragging');
+                document.removeEventListener('mousemove', handleDrag);
+                document.removeEventListener('mouseup', stopDrag);
+                document.removeEventListener('touchmove', handleDrag);
+                document.removeEventListener('touchend', stopDrag);
+                updateProportion();
+                // renderTree();
+            }
+        }
+
+        // Initialize resizer
+        VERTICAL_RESIZER.addEventListener('mousedown', startDrag);
+        VERTICAL_RESIZER.addEventListener('touchstart', startDrag);
+        updateProportion();
+        window.addEventListener('resize', throttle(updateOutlineWidth, 67));
+
         // Prevent text selection on double-click
-        VIEWPORT.addEventListener("mousedown", e => {
+        OUTLINE_PANE.addEventListener("mousedown", e => {
             if (e.detail === 2) e.preventDefault();
         });
 
-        VIEWPORT.addEventListener('click', (event) => {
+        OUTLINE_PANE.addEventListener('click', (event) => {
             const nodeEl = event.target.closest('.node');
             if (!nodeEl) return;
 
@@ -400,7 +501,7 @@
             }
         });
 
-        VIEWPORT.addEventListener('dblclick', (event) => {
+        OUTLINE_PANE.addEventListener('dblclick', (event) => {
             if (event.target.classList.contains('node-text')) {
                 event.preventDefault();
                 event.stopPropagation();
@@ -423,7 +524,7 @@
         });
 
         // Scroll handler
-        VIEWPORT.addEventListener("scroll", renderTree);
+        OUTLINE_PANE.addEventListener("scroll", throttle(renderTree, 33));
 
         // Initial render
         renderTree();
