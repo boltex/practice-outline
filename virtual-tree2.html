@@ -5,11 +5,36 @@
     <meta charset="UTF-8">
     <title>Virtualised Tree</title>
     <style>
+        :root {
+            /* Light theme (default) */
+            --background-color: #ffffec;
+            --body-pane-color: #fff6f5;
+            --resizer-color: #cae1ff;
+            --selected-bg: #cae1ff;
+            --ancestor-bg: #eef5ff;
+            --focus-outline: #0000ff;
+            --text-color: #000000;
+            --caret-dim-color: #888;
+        }
+
+        [data-theme="dark"] {
+            /* Dark theme */
+            --background-color: #1e1e2e;
+            --body-pane-color: #2a2536;
+            --resizer-color: #454a6e;
+            --selected-bg: #454a6e;
+            --ancestor-bg: #2d3250;
+            --focus-outline: #7aa2f7;
+            --text-color: #cdd6f4;
+            --caret-dim-color: #999;
+        }
+
         body {
             margin: 0;
             display: flex;
             height: 100vh;
-            background: #ffffec;
+            background: var(--background-color);
+            color: var(--text-color);
         }
 
         body.dragging {
@@ -27,20 +52,19 @@
 
         #vertical-resizer {
             position: relative;
-            /* Required for pseudo-elements positioning */
             width: 5px;
             cursor: ew-resize;
-            background: #cae1ff;
+            background: var(--resizer-color);
         }
 
         #vertical-resizer::before,
         #vertical-resizer::after {
+            /* Invisible extension width extended with before/after below */
             content: "";
             position: absolute;
             top: 0;
             height: 100%;
             width: 5px;
-            /* Invisible extension width extended with before/after below */
             cursor: ew-resize;
         }
 
@@ -55,7 +79,7 @@
         #body-pane {
             flex: 1;
             padding: 1rem 0 0 1rem;
-            background: #fff6f5;
+            background: var(--body-pane-color);
             overflow-y: auto;
             font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
             white-space: pre-wrap;
@@ -69,7 +93,7 @@
               Note: Outline will appear under the items positioned absolutely.
               see pseudo-elements with "z-index: -1" that appear below this outline.
              */
-            outline: 3px solid #0000ff;
+            outline: 3px solid var(--focus-outline);
             outline-offset: -3px;
         }
 
@@ -84,7 +108,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: #cae1ff;
+            background: var(--selected-bg);
             z-index: -1;
             border-radius: 4px;
         }
@@ -100,7 +124,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: #eef5ff;
+            background: var(--ancestor-bg);
             z-index: -1;
             border-radius: 4px;
         }
@@ -150,7 +174,7 @@
         .caret[data-expanded="false"]::after {
             content: "❯";
             transform: rotate(0deg);
-            color: #888;
+            color: var(--caret-dim-color);
         }
 
         .caret.toggled[data-expanded="true"]::after {
@@ -162,14 +186,14 @@
         .caret.toggled[data-expanded="false"]::after {
             content: "❯";
             transform: rotate(0deg);
-            color: #888;
+            color: var(--caret-dim-color);
             animation: rotateClose 120ms ease-out;
         }
 
         @keyframes rotateOpen {
             from {
                 transform: rotate(0deg);
-                color: #888;
+                color: var(--caret-dim-color);
             }
 
             to {
@@ -186,8 +210,33 @@
 
             to {
                 transform: rotate(0deg);
-                color: #888;
+                color: var(--caret-dim-color);
             }
+        }
+
+        #theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--resizer-color);
+            color: var(--text-color);
+            border: 2px solid var(--text-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            line-height: 1;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            transition: transform 0.2s ease;
+        }
+
+        #theme-toggle:hover {
+            transform: scale(1.1);
         }
     </style>
 </head>
@@ -196,6 +245,7 @@
     <div id="outline-pane" tabindex="0"></div>
     <div id="vertical-resizer"></div>
     <div id="body-pane" tabindex="0"></div>
+    <button id="theme-toggle" aria-label="Toggle dark/light mode">🌓</button>
     <script>
         const tree = {
             "gnx": 0,
@@ -279,6 +329,8 @@
         const OUTLINE_PANE = document.getElementById("outline-pane");
         const BODY_PANE = document.getElementById("body-pane");
         const VERTICAL_RESIZER = document.getElementById('vertical-resizer');
+        const THEME_TOGGLE = document.getElementById('theme-toggle');
+        const HTML_ELEMENT = document.documentElement;
 
         // Select first node in the hidden root initially
         if (tree.children && tree.children.length > 0) {
@@ -546,6 +598,36 @@
 
         // Scroll handler
         OUTLINE_PANE.addEventListener("scroll", throttle(renderTree, 33));
+
+        // Check for saved theme preference or use OS preference
+        const getCurrentTheme = () => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                return savedTheme;
+            }
+
+            // Use OS preference as fallback
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        };
+
+        // Apply the current theme
+        const applyTheme = (theme) => {
+            HTML_ELEMENT.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+
+            // Update button text/icon based on current theme
+            THEME_TOGGLE.innerHTML = theme === 'dark' ? '🌙' : '☀️';
+        };
+
+        // Initialize with saved/detected theme
+        applyTheme(getCurrentTheme());
+
+        // Toggle theme when button is clicked
+        THEME_TOGGLE.addEventListener('click', () => {
+            const currentTheme = HTML_ELEMENT.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            applyTheme(newTheme);
+        });
 
         // Initial render
         renderTree();
