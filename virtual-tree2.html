@@ -278,6 +278,7 @@
         function renderTree() {
             const scrollTop = VIEWPORT.scrollTop;
             const viewportHeight = VIEWPORT.clientHeight;
+            const viewportWidth = VIEWPORT.clientWidth;
 
             const startIndex = Math.floor(scrollTop / ROW_HEIGHT);
             const visibleCount = Math.ceil(viewportHeight / ROW_HEIGHT) + 1;
@@ -293,10 +294,19 @@
             for (let i = startIndex; i < endIndex; i++) {
                 const row = flatRows[i];
                 const div = document.createElement("div");
-                div.className = "node selected";
+                div.className = "node";
+
+                // TODO: last selected node and its ancestors should have special classes
+
                 div.style.top = (i * ROW_HEIGHT) + "px";
-                div.style.left = (row.depth * 20) + LEFT_OFFSET + "px";
+
+                const leftPosition = (row.depth * 20) + LEFT_OFFSET;
+                div.style.left = leftPosition + "px";
                 div.style.height = ROW_HEIGHT + "px";
+
+                // Calculate and set width directly - efficient approach
+                const availableWidth = viewportWidth - leftPosition;
+                div.style.width = availableWidth + "px";
 
                 // Create a caret span element
                 const caret = document.createElement("span");
@@ -319,6 +329,33 @@
                 spacer.appendChild(div);
             }
         }
+
+        // Prevent text selection on double-click
+        VIEWPORT.addEventListener("mousedown", e => {
+            if (e.detail === 2) e.preventDefault();
+        });
+
+        // Add double-click handler to toggle expanded state
+        VIEWPORT.addEventListener('dblclick', (event) => {
+            if (event.target.classList.contains('node-text')) {
+                // Additional prevention to ensure no text selection
+                event.preventDefault();
+                event.stopPropagation();
+
+                // Find the parent node element
+                const nodeEl = event.target.closest('.node');
+                if (!nodeEl) return;
+
+                // Find the corresponding row data based on position
+                const rowIndex = Math.floor(parseInt(nodeEl.style.top) / ROW_HEIGHT);
+                if (rowIndex >= 0 && rowIndex < flatRows.length) {
+                    const row = flatRows[rowIndex];
+                    if (row.hasChildren) {
+                        toggleNode(row.node);
+                    }
+                }
+            }
+        });
 
         // Scroll handler
         VIEWPORT.addEventListener("scroll", renderTree);
