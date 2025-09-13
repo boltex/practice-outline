@@ -26,9 +26,30 @@
         }
 
         #vertical-resizer {
+            position: relative;
+            /* Required for pseudo-elements positioning */
             width: 5px;
             cursor: ew-resize;
             background: #cae1ff;
+        }
+
+        #vertical-resizer::before,
+        #vertical-resizer::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: 5px;
+            /* Invisible extension width extended with before/after below */
+            cursor: ew-resize;
+        }
+
+        #vertical-resizer::before {
+            left: -5px;
+        }
+
+        #vertical-resizer::after {
+            right: -5px;
         }
 
         #body-pane {
