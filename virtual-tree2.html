@@ -48,20 +48,15 @@
             outline-offset: -3px;
         }
 
-        .node-text {
-            display: block;
-            cursor: pointer;
-            padding: 2px 4px;
-            margin-right: 1rem;
-            border-radius: 4px;
-        }
-
-        /* Selected + ancestor styles still just target the label */
         .selected>.node-text {
             background: #cae1ff;
         }
 
-        .position {
+        .ancestor>.node-text {
+            background: #eef5ff;
+        }
+
+        .node {
             position: absolute;
             white-space: nowrap;
             cursor: pointer;
@@ -69,22 +64,33 @@
             display: grid;
             grid-template-columns: 1em 1fr;
             align-items: start;
+            /* row-gap: 2px; */
             /* padding: 2px 0; */
         }
 
         /* Caret stays a small target in the first column */
         .caret {
+            grid-column: 1;
             display: inline-block;
             width: 1em;
             cursor: pointer;
             user-select: none;
         }
 
+        .node-text {
+            grid-column: 2;
+            display: block;
+            cursor: pointer;
+            padding: 2px 4px;
+            margin-right: 1rem;
+            border-radius: 4px;
+        }
+
         /* Caret glyphs */
         .caret::after {
             display: inline-block;
             transform-origin: 50% 50%;
-            transform: rotate(0deg);
+            transition: transform 160ms cubic-bezier(.2, .9, .3, 1), color 120ms;
         }
 
         .caret[data-expanded="true"]::after {
@@ -94,7 +100,45 @@
 
         .caret[data-expanded="false"]::after {
             content: "❯";
+            transform: rotate(0deg);
             color: #888;
+        }
+
+        .caret.toggled[data-expanded="true"]::after {
+            content: "❯";
+            transform: rotate(90deg);
+            animation: rotateOpen 120ms ease-out;
+        }
+
+        .caret.toggled[data-expanded="false"]::after {
+            content: "❯";
+            transform: rotate(0deg);
+            color: #888;
+            animation: rotateClose 120ms ease-out;
+        }
+
+        @keyframes rotateOpen {
+            from {
+                transform: rotate(0deg);
+                color: #888;
+            }
+
+            to {
+                transform: rotate(90deg);
+                color: inherit;
+            }
+        }
+
+        @keyframes rotateClose {
+            from {
+                transform: rotate(90deg);
+                color: inherit;
+            }
+
+            to {
+                transform: rotate(0deg);
+                color: #888;
+            }
         }
     </style>
 </head>
@@ -186,10 +230,16 @@
                 rows.push({
                     label: data[node.gnx].headString,
                     depth,
+                    toggled: node.toggled || false, // Will make it render with toggled class
                     hasChildren: !!node.children && node.children.length > 0,
                     isExpanded: expandedSet.has(node),
                     node
                 });
+            }
+
+            if (node.toggled) {
+                // Clear the toggled flag after processing
+                node.toggled = false;
             }
 
             // If expanded and has children, process them
@@ -212,6 +262,18 @@
         // State
         let flatRows = flattenTree(tree, expanded);
 
+        // Utility to expand or collapse a node
+        function toggleNode(node) {
+            if (expanded.has(node)) {
+                expanded.delete(node);
+            } else {
+                expanded.add(node);
+            }
+            node.toggled = true; // Mark as toggled
+            flatRows = flattenTree(tree, expanded);
+            renderTree();
+        }
+
         // Render visible rows only
         function renderTree() {
             const scrollTop = VIEWPORT.scrollTop;
@@ -231,25 +293,19 @@
             for (let i = startIndex; i < endIndex; i++) {
                 const row = flatRows[i];
                 const div = document.createElement("div");
-                div.className = "position";
+                div.className = "node selected";
                 div.style.top = (i * ROW_HEIGHT) + "px";
                 div.style.left = (row.depth * 20) + LEFT_OFFSET + "px";
                 div.style.height = ROW_HEIGHT + "px";
 
                 // Create a caret span element
                 const caret = document.createElement("span");
-                caret.className = "caret";
+                caret.className = row.toggled ? "caret toggled" : "caret";
                 if (row.hasChildren) {
                     caret.setAttribute("data-expanded", row.isExpanded ? "true" : "false");
                     caret.onclick = (e) => {
                         e.stopPropagation();
-                        if (expanded.has(row.node)) {
-                            expanded.delete(row.node);
-                        } else {
-                            expanded.add(row.node);
-                        }
-                        flatRows = flattenTree(tree, expanded);
-                        renderTree();
+                        toggleNode(row.node);
                     };
                 }
                 div.appendChild(caret);
