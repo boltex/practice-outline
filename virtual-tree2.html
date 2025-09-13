@@ -25,7 +25,7 @@
             font-family: sans-serif;
         }
 
-        #resizer {
+        #vertical-resizer {
             width: 5px;
             cursor: ew-resize;
             background: #cae1ff;
@@ -145,7 +145,7 @@
 
 <body>
     <div id="outline-pane" tabindex="0"></div>
-    <div id="resizer"></div>
+    <div id="vertical-resizer"></div>
     <div id="body-pane" tabindex="0"></div>
     <script>
         const tree = {
@@ -218,8 +218,22 @@
         // Call it on the root
         buildParentRefs(tree);
 
-        // Track expanded nodes
+
         const expanded = new Set([tree]); // Root expanded initially
+        let selectedNode = null; // Track the currently selected node
+        let isDragging = false;
+
+        // Constants
+        const ROW_HEIGHT = 26;
+        const LEFT_OFFSET = 16; // Padding from left edge
+        const VIEWPORT = document.getElementById("outline-pane");
+        const VERTICAL_RESIZER = document.getElementById('vertical-resizer');
+
+        // Select first node in the hidden root initially
+        if (tree.children && tree.children.length > 0) {
+            selectedNode = tree.children[0];
+        }
+        let flatRows = flattenTree(tree, expanded);
 
         // Flatten tree into visible rows
         function flattenTree(node, expandedSet, depth = 0, isRoot = true) {
@@ -254,24 +268,49 @@
             return rows;
         }
 
-        // Constants
-        const ROW_HEIGHT = 26;
-        const LEFT_OFFSET = 16; // Padding from left edge
-        const VIEWPORT = document.getElementById("outline-pane");
-
-        // State
-        let flatRows = flattenTree(tree, expanded);
-
-        // Utility to expand or collapse a node
-        function toggleNode(node) {
-            if (expanded.has(node)) {
-                expanded.delete(node);
-            } else {
-                expanded.add(node);
+        // Selects and/or toggles a node
+        function updateTree(newSelectedNode = null, nodeToToggle = null) {
+            // Handle toggling if requested
+            if (nodeToToggle) {
+                if (expanded.has(nodeToToggle)) {
+                    expanded.delete(nodeToToggle);
+                } else {
+                    expanded.add(nodeToToggle);
+                }
+                nodeToToggle.toggled = true; // Mark as toggled
             }
-            node.toggled = true; // Mark as toggled
+
+            // Handle selection if requested
+            if (newSelectedNode) {
+                selectedNode = newSelectedNode;
+            }
+
+            // Only rebuild and redraw once
             flatRows = flattenTree(tree, expanded);
             renderTree();
+
+            // Update body pane if selection changed
+            if (newSelectedNode) {
+                const bodyPane = document.getElementById("body-pane");
+                if (newSelectedNode && data[newSelectedNode.gnx]) {
+                    bodyPane.textContent = data[newSelectedNode.gnx].bodyString || "";
+                } else {
+                    bodyPane.textContent = "";
+                }
+            }
+        }
+
+        function isAncestor(possibleAncestor, descendant) {
+            // Check if possibleAncestor is actually an ancestor of descendant
+            // by walking up the parent chain
+            let current = descendant.parent;
+            while (current) {
+                if (current === possibleAncestor) {
+                    return true;
+                }
+                current = current.parent;
+            }
+            return false;
         }
 
         // Render visible rows only
@@ -296,7 +335,12 @@
                 const div = document.createElement("div");
                 div.className = "node";
 
-                // TODO: last selected node and its ancestors should have special classes
+                // Add selected and ancestor classes
+                if (row.node === selectedNode) {
+                    div.classList.add("selected");
+                } else if (selectedNode && isAncestor(row.node, selectedNode)) {
+                    div.classList.add("ancestor");
+                }
 
                 div.style.top = (i * ROW_HEIGHT) + "px";
 
@@ -313,10 +357,6 @@
                 caret.className = row.toggled ? "caret toggled" : "caret";
                 if (row.hasChildren) {
                     caret.setAttribute("data-expanded", row.isExpanded ? "true" : "false");
-                    caret.onclick = (e) => {
-                        e.stopPropagation();
-                        toggleNode(row.node);
-                    };
                 }
                 div.appendChild(caret);
 
@@ -324,8 +364,8 @@
                 const labelSpan = document.createElement("span");
                 labelSpan.className = "node-text";
                 labelSpan.textContent = row.label;
-                div.appendChild(labelSpan);
 
+                div.appendChild(labelSpan);
                 spacer.appendChild(div);
             }
         }
@@ -335,23 +375,48 @@
             if (e.detail === 2) e.preventDefault();
         });
 
-        // Add double-click handler to toggle expanded state
+        VIEWPORT.addEventListener('click', (event) => {
+            const nodeEl = event.target.closest('.node');
+            if (!nodeEl) return;
+
+            const rowIndex = Math.floor(parseInt(nodeEl.style.top) / ROW_HEIGHT);
+            if (rowIndex < 0 || rowIndex >= flatRows.length) return;
+
+            const row = flatRows[rowIndex];
+
+            // Handle different click targets
+            if (event.target.classList.contains('node-text')) {
+                event.stopPropagation();
+                if (row.node !== selectedNode) {
+                    updateTree(row.node); // Just selection
+                }
+            } else if (event.target.classList.contains('caret') && row.hasChildren) {
+                event.stopPropagation();
+                // Both toggle and select in one operation
+                updateTree(
+                    row.node !== selectedNode ? row.node : null,
+                    row.node
+                );
+            }
+        });
+
         VIEWPORT.addEventListener('dblclick', (event) => {
             if (event.target.classList.contains('node-text')) {
-                // Additional prevention to ensure no text selection
                 event.preventDefault();
                 event.stopPropagation();
 
-                // Find the parent node element
                 const nodeEl = event.target.closest('.node');
                 if (!nodeEl) return;
 
-                // Find the corresponding row data based on position
                 const rowIndex = Math.floor(parseInt(nodeEl.style.top) / ROW_HEIGHT);
                 if (rowIndex >= 0 && rowIndex < flatRows.length) {
                     const row = flatRows[rowIndex];
                     if (row.hasChildren) {
-                        toggleNode(row.node);
+                        // Handle both selection and toggle in one update
+                        updateTree(
+                            row.node !== selectedNode ? row.node : null,
+                            row.node
+                        );
                     }
                 }
             }
