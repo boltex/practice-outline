@@ -317,10 +317,10 @@
         // Call it on the root
         buildParentRefs(tree);
 
-
         const expanded = new Set([tree]); // Root expanded initially
         let selectedNode = null; // Track the currently selected node
         let isDragging = false;
+        let outlineProportion;
         const minWidth = 0;
 
         // Constants
@@ -465,8 +465,21 @@
             }
         }
 
+        // Save outline proportion to localStorage
+        function saveOutlineProportion(proportion) {
+            localStorage.setItem('outlineProportion', proportion);
+        }
+
+        const throttledSaveOutlineProportion = throttle(saveOutlineProportion, 500);
+
+        function getSavedOutlineProportion() {
+            const saved = localStorage.getItem('outlineProportion');
+            return saved ? parseFloat(saved) : 0.25; // Default to 25% if not saved
+        }
+
         function updateProportion() {
             outlineProportion = OUTLINE_PANE.offsetWidth / window.innerWidth;
+            throttledSaveOutlineProportion(outlineProportion);
         }
 
         function throttle(func, limit) {
@@ -541,7 +554,6 @@
         // Initialize resizer
         VERTICAL_RESIZER.addEventListener('mousedown', startDrag);
         VERTICAL_RESIZER.addEventListener('touchstart', startDrag);
-        updateProportion();
         window.addEventListener('resize', throttle(updateOutlineWidth, 67));
 
         // Prevent text selection on double-click
@@ -599,38 +611,53 @@
         // Scroll handler
         OUTLINE_PANE.addEventListener("scroll", throttle(renderTree, 33));
 
-        // Check for saved theme preference or use OS preference
         const getCurrentTheme = () => {
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme) {
                 return savedTheme;
             }
-
             // Use OS preference as fallback
             return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         };
 
-        // Apply the current theme
         const applyTheme = (theme) => {
             HTML_ELEMENT.setAttribute('data-theme', theme);
             localStorage.setItem('theme', theme);
 
-            // Update button text/icon based on current theme
             THEME_TOGGLE.innerHTML = theme === 'dark' ? '🌙' : '☀️';
         };
 
-        // Initialize with saved/detected theme
         applyTheme(getCurrentTheme());
 
-        // Toggle theme when button is clicked
         THEME_TOGGLE.addEventListener('click', () => {
             const currentTheme = HTML_ELEMENT.getAttribute('data-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             applyTheme(newTheme);
         });
 
-        // Initial render
-        renderTree();
+        function getSavedOutlineProportion() {
+            const saved = localStorage.getItem('outlineProportion');
+            return saved ? parseFloat(saved) : null; // Return null instead of default value
+        }
+
+        function initializeLayout() {
+
+            const savedProportion = getSavedOutlineProportion();
+
+            if (savedProportion !== null) {
+                outlineProportion = savedProportion;
+                updateOutlineWidth();
+            } else {
+                outlineProportion = OUTLINE_PANE.offsetWidth / window.innerWidth;
+            }
+            // Initial render
+            renderTree();
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeLayout();
+            applyTheme(getCurrentTheme());
+        });
     </script>
 </body>
 
