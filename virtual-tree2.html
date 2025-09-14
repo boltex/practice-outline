@@ -356,6 +356,10 @@
             }
         };
 
+        // Note: Also use buildClones and buildParentRefs
+        // to add icon member to data entries as needed:
+        // hasBody: 1, isMarked: 2, isClone: 4, isDirty: 8
+
         let visitedNodes = {}; // Keys are gnx, values are node references
         // Build clones when repeated in the tree
         function buildClones(node) {
@@ -364,6 +368,10 @@
             // If we've already seen this node, fill its children with JSON stringify/parse for deep copy.
             if (visitedNodes[node.gnx]) {
                 node.children = JSON.parse(JSON.stringify(visitedNodes[node.gnx].children));
+                if (!data[node.gnx].icon) {
+                    data[node.gnx].icon = 0;
+                }
+                data[node.gnx].icon += 4; // It's a clone!
                 // Do not recurse into children, they are already built
             } else {
                 visitedNodes[node.gnx] = node;
@@ -379,6 +387,14 @@
         // Add parent references to all nodes recursively
         function buildParentRefs(node, parent = null) {
             node.parent = parent;
+            // Also set icon bits for hasBody (check for node.gnx first because root has no gnx)
+            if (node.gnx && !data[node.gnx].icon) {
+                data[node.gnx].icon = 0;
+            }
+            // Even whitespace is considered body
+            if (node.gnx && data[node.gnx].bodyString) {
+                data[node.gnx].icon += 1; // hasBody
+            }
             if (node.children) {
                 for (const child of node.children) {
                     buildParentRefs(child, node); // recurse with current node as parent
