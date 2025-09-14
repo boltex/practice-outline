@@ -257,7 +257,7 @@
 <body>
     <div id="outline-pane" tabindex="0"></div>
     <div id="vertical-resizer"></div>
-    <div id="body-pane" tabindex="0"></div>
+    <div id="body-pane" tabindex="0" contenteditable="plaintext-only"></div>
     <button id="theme-toggle" aria-label="Toggle dark/light mode"><span id="toggle-icon">🌓</span></button>
     <script>
         const tree = {
@@ -1128,6 +1128,15 @@
         }
 
         function initializeLayout() {
+            // Block all text changes (typing, delete, paste, etc.)
+            BODY_PANE.addEventListener("beforeinput", (e) => {
+                e.preventDefault();
+            });
+
+            // Extra safety: block right-click "Paste"
+            BODY_PANE.addEventListener("paste", (e) => {
+                e.preventDefault();
+            });
 
             const savedProportion = getSavedOutlineProportion();
 
