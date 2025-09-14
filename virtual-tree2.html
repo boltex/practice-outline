@@ -685,27 +685,27 @@
 
         function goToLastVisibleNode() {
             // Select the last visible node in the outline.
-            let p = selectedNode
-            while (p) {
-                const next = moveToVisNext(p);
+            let node = selectedNode
+            while (node) {
+                const next = moveToVisNext(node);
                 if (next && isVisible(next)) {
-                    p = next;
+                    node = next;
                 } else {
                     break;
                 }
             }
-            if (p) updateTree(p);
+            if (node) updateTree(node);
         };
 
         function collapseAll() {
             // Collapse all nodes in outline and select the proper top-level node
             expanded.clear();
 
-            let p = selectedNode;
-            while (p && hasParent(p)) {
-                p = moveToParent(p);
+            let node = selectedNode;
+            while (node && hasParent(node)) {
+                node = moveToParent(node);
             }
-            if (p) updateTree(p);
+            if (node) updateTree(node);
         };
 
         function toggleSelected() {
