@@ -235,10 +235,21 @@
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
             z-index: 1000;
             transition: transform 0.2s ease;
+            overflow: hidden;
         }
 
         #theme-toggle:hover {
             transform: scale(1.1);
+        }
+
+        #toggle-icon {
+            position: relative;
+            top: 0;
+            transition: top 0.3s ease;
+        }
+
+        #theme-toggle:active #toggle-icon {
+            top: 25px;
         }
     </style>
 </head>
@@ -247,7 +258,7 @@
     <div id="outline-pane" tabindex="0"></div>
     <div id="vertical-resizer"></div>
     <div id="body-pane" tabindex="0"></div>
-    <button id="theme-toggle" aria-label="Toggle dark/light mode">🌓</button>
+    <button id="theme-toggle" aria-label="Toggle dark/light mode"><span id="toggle-icon">🌓</span></button>
     <script>
         const tree = {
             "gnx": 0,
@@ -332,6 +343,7 @@
         const BODY_PANE = document.getElementById("body-pane");
         const VERTICAL_RESIZER = document.getElementById('vertical-resizer');
         const THEME_TOGGLE = document.getElementById('theme-toggle');
+        const THEME_ICON = document.getElementById('toggle-icon');
         const HTML_ELEMENT = document.documentElement;
 
         // Select first node in the hidden root initially
@@ -670,7 +682,7 @@
             HTML_ELEMENT.setAttribute('data-theme', theme);
             localStorage.setItem('theme', theme);
 
-            THEME_TOGGLE.innerHTML = theme === 'dark' ? '🌙' : '☀️';
+            THEME_ICON.innerHTML = theme === 'dark' ? '🌙' : '☀️';
         };
 
         applyTheme(getCurrentTheme());
