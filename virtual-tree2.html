@@ -347,6 +347,367 @@
         const HTML_ELEMENT = document.documentElement;
 
         // Navigation helpers
+        function children(node) {
+            // Given a node, return an array of its children
+            return [...node.children] || [];
+        }
+
+        function childIndex(node) {
+            // Given a node, return its index among its siblings (0 for first, 1 for second, etc).
+            const parent = node.parent;
+            if (parent) {
+                const siblings = children(parent);
+                return siblings.indexOf(node);
+            }
+            return 0; // Should not happen for valid nodes because the top nodes are in the #outline-pane div
+        };
+
+        function parents(node) {
+            // Given a node, return an array of its ancestor nodes, closest first.
+            const ancestors = [];
+            let current = node;
+            while (current) {
+                const parent = current.parent;
+                if (parent) {
+                    ancestors.push(parent);
+                }
+                current = parent;
+            }
+            return ancestors;
+        };
+
+        function hasChildren(node) {
+            // Given a node, return true if it has children.
+            return node.children && node.children.length > 0;
+        }
+
+        function numberOfChildren(node) {
+            // Given a node, return the number of its children.
+            return node.children ? node.children.length : 0;
+        }
+
+        function isExpanded(node) {
+            // Given a node, return true if it is expanded.
+            return expanded.has(node);
+        }
+
+        function isVisible(node) {
+            // Return True if node is visible in the outline.
+            if (!node.parent) return false; // Should not happen for valid nodes because the top nodes are in the #outline-pane div
+            const ancestors = parents(node);
+            for (const ancestor of ancestors) {
+                if (!isExpanded(ancestor)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function hasBack(node) {
+            // Given a node, return true if it has a previous sibling.
+            const parent = node.parent;
+            if (parent) {
+                const siblings = children(parent);
+                const index = siblings.indexOf(node);
+                return index > 0;
+            }
+            return false;
+        }
+
+        function hasNext(node) {
+            // Given a node, return true if it has a next sibling.
+            const parent = node.parent;
+            if (parent) {
+                const siblings = children(parent);
+                const index = siblings.indexOf(node);
+                return index < siblings.length - 1;
+            }
+            return false;
+        }
+
+        function hasParent(node) {
+            // Given a node, return true if it has a parent.
+            return !!node.parent;
+        }
+
+        function hasThreadBack(node) {
+            // Much cheaper than computing the actual value.
+            return hasBack(node) || hasParent(node);
+        }
+
+        function moveToBack(node) {
+            // Given a node, return its previous sibling. If first, or no parent, return null.
+            const parent = node.parent;
+            if (parent) {
+                const siblings = children(parent);
+                const index = siblings.indexOf(node);
+                return index > 0 ? siblings[index - 1] : null;
+            }
+            return null;
+        }
+
+        function moveToFirstChild(node) {
+            // Given a node, return its first child if any. Else return null.
+            return hasChildren(node) ? node.children[0] : null;
+        }
+
+        function moveToLastChild(node) {
+            // Given a node, return its last child if any. Else return null.
+            return hasChildren(node) ? node.children[node.children.length - 1] : null;
+        }
+
+        function moveToLastNode(node) {
+            // Given a node, return the last node of its tree or itself if no children.
+            while (hasChildren(node)) {
+                node = moveToLastChild(node);
+            }
+            return node;
+        }
+
+        function moveToNext(node) {
+            // Given a node, return its next sibling. If already last, return null.
+            const parent = node.parent;
+            if (parent) {
+                const siblings = children(parent);
+                const index = siblings.indexOf(node);
+                return index < siblings.length - 1 ? siblings[index + 1] : null;
+            }
+            return null;
+        }
+
+        function moveToNodeAfterTree(node) {
+            // Given a node, return the node after the position's tree.
+            while (node) {
+                if (hasNext(node)) {
+                    node = moveToNext(node);
+                    break;
+                }
+                node = moveToParent(node);
+            }
+            return node;
+        }
+
+        function moveToNthChild(node, n) {
+            // Given a node, return its nth child if it exists. Else return null.
+            if (hasChildren(node) && n < node.children.length) {
+                return node.children[n];
+            }
+            return null;
+        }
+
+        function moveToParent(node) {
+            // Given a node, return its parent or null if no parent.
+            const parent = node.parent;
+            if (parent) {
+                return parent;
+            }
+            return null;
+        }
+
+        function moveToThreadBack(node) {
+            // Given a node, return the previous node in the outline.
+            if (hasBack(node)) {
+                node = moveToBack(node);
+                node = moveToLastNode(node);
+            } else {
+                node = moveToParent(node);
+            }
+            return node;
+        }
+
+        function moveToThreadNext(node) {
+            // Given a node, return the next node in the outline.
+            if (hasChildren(node)) {
+                node = moveToFirstChild(node);
+            } else if (hasNext(node)) {
+                node = moveToNext(node);
+            } else {
+                node = moveToParent(node);
+                while (node) {
+                    if (node && hasNext(node)) {
+                        node = moveToNext(node);
+                        break;
+                    }
+                    node = moveToParent(node);
+                }
+            }
+            return node;
+        };
+
+        function moveToVisBack(node) {
+            // Given a node, return the previous visible node in the outline.
+            while (node) {
+                // Short-circuit if possible.
+                const back = moveToBack(node);
+                if (back && hasChildren(back) && isExpanded(back))
+                    node = moveToThreadBack(node);
+                else if (back) {
+                    node = moveToBack(node);
+                } else {
+                    node = moveToParent(node);  // Same as p.moveToThreadBack()
+                }
+                if (node && isVisible(node)) {
+                    return node;
+                }
+            }
+            return node;
+        }
+
+        function moveToVisNext(node) {
+            // Given a node, return the next visible node in the outline.
+            while (node) {
+                if (hasChildren(node)) {
+                    if (isExpanded(node)) {
+                        node = moveToFirstChild(node);
+                    } else {
+                        node = moveToNodeAfterTree(node);
+                    }
+                } else if (hasNext(node)) {
+                    node = moveToNext(node);
+                } else {
+                    node = moveToThreadNext(node);
+                }
+                if (node && isVisible(node)) {
+                    return node;
+                }
+            }
+        };
+
+        function expandNodeAndGoToFirstChild() {
+            // If the presently selected node has children, expand it if needed and go to the first child.
+            let node = selectedNode;
+            if (hasChildren(node)) {
+                if (!isExpanded(node)) {
+                    expanded.add(node);
+                    node.toggled = true; // Mark as toggled
+                }
+                node = moveToFirstChild(node);
+                updateTree(node);
+            }
+        }
+
+        function contractNodeOrGoToParent() {
+            // If the presently selected node is expanded, collapse it. Otherwise go to the parent.
+            let node = selectedNode;
+            if (hasChildren(node) && isExpanded(node)) {
+                updateTree(null, node);
+            } else if (hasParent(node)) {
+                const parent = moveToParent(node);
+                if (isVisible(parent)) {
+                    // Contract all children first
+                    for (const child of children(parent)) {
+                        if (isExpanded(child)) {
+                            expanded.delete(child);
+                            child.toggled = true; // Mark as toggled
+                        }
+                    }
+                    updateTree(parent);
+                }
+            }
+        }
+
+        function selectVisBack() {
+            // Select the visible node preceding the presently selected node.
+            let node = selectedNode;
+            if (moveToVisBack(node)) {
+                node = moveToVisBack(node);
+                updateTree(node);
+            }
+        }
+
+        function selectVisNext() {
+            // Select the visible node following the presently selected node.
+            let node = selectedNode;
+            if (moveToVisNext(node)) {
+                node = moveToVisNext(node);
+                updateTree(node);
+            }
+        }
+
+        function goToFirstSibling() {
+            // Select the first sibling of the presently selected node.
+            let node = selectedNode;
+            if (hasBack(node)) {
+                while (hasBack(node)) {
+                    node = moveToBack(node);
+                }
+            }
+            updateTree(node);
+        };
+
+        function goToLastSibling() {
+            // Select the last sibling of the presently selected node.
+            let node = selectedNode;
+            if (hasNext(node)) {
+                while (hasNext(node)) {
+                    node = moveToNext(node);
+                }
+            }
+            updateTree(node);
+        };
+
+        function gotoFirstSiblingOrParent() {
+            // Select the first sibling of the presently selected node, or its parent if already first.
+            let node = selectedNode;
+            if (hasBack(node)) {
+                while (hasBack(node)) {
+                    node = moveToBack(node);
+                }
+            } else if (hasParent(node)) {
+                // No need to check visibility, parent always is.
+                node = moveToParent(node);
+            }
+            updateTree(node);
+        };
+
+        function goToLastSiblingOrVisNext() {
+            // Select the last sibling of the presently selected node, or the next visible node if already last.
+            let node = selectedNode;
+            if (hasNext(node)) {
+                while (hasNext(node)) {
+                    node = moveToNext(node);
+                }
+            } else if (moveToVisNext(node)) {
+                node = moveToVisNext(node);
+            }
+            if (node) updateTree(node);
+        };
+
+
+        function gotoFirstVisibleNode() {
+            // Select the first visible node in the outline. (first child of hidden root node)
+            const firstNode = moveToFirstChild(tree);
+            if (firstNode) {
+                // No need to check visibility, first node always is.
+                updateTree(firstNode);
+            }
+        };
+
+        function goToLastVisibleNode() {
+            // Select the last visible node in the outline.
+            let p = selectedNode
+            while (p) {
+                const next = moveToVisNext(p);
+                if (next && isVisible(next)) {
+                    p = next;
+                } else {
+                    break;
+                }
+            }
+            if (p) updateTree(p);
+        };
+
+        function collapseAll() {
+            // Collapse all nodes in outline and select the proper top-level node
+            expanded.clear();
+
+            let p = selectedNode;
+            while (p && hasParent(p)) {
+                p = moveToParent(p);
+            }
+            if (p) updateTree(p);
+        };
+
         function toggleSelected() {
             if (selectedNode && selectedNode.children && selectedNode.children.length > 0) {
                 updateTree(null, selectedNode);
@@ -638,40 +999,31 @@
                 toggleSelected();
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
-                // TODO!
-                console.log('selectVisBack');
+                selectVisBack();
             } else if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                // TODO!
-                console.log('selectVisNext');
+                selectVisNext();
             } else if (e.key === 'ArrowLeft') {
                 e.preventDefault();
-                // TODO!
-                console.log('contractNodeOrGoToParent');
+                contractNodeOrGoToParent();
             } else if (e.key === 'ArrowRight') {
                 e.preventDefault();
-                // TODO!
-                console.log('expandNodeAndGoToFirstChild');
+                expandNodeAndGoToFirstChild();
             } else if (e.key === 'PageUp') {
                 e.preventDefault();
-                // TODO!
-                console.log('gotoFirstSiblingOrParent');
+                gotoFirstSiblingOrParent();
             } else if (e.key === 'PageDown') {
                 e.preventDefault();
-                // TODO!
-                console.log('goToLastSiblingOrVisNext');
+                goToLastSiblingOrVisNext();
             } else if (e.key === 'Home') {
                 e.preventDefault();
-                // TODO!
-                console.log('gotoFirstVisibleNode');
+                gotoFirstVisibleNode();
             } else if (e.key === 'End') {
                 e.preventDefault();
-                // TODO!
-                console.log('goToLastVisibleNode');
+                goToLastVisibleNode();
             } else if (e.key === '-' && e.altKey && !e.ctrlKey && !e.metaKey) {
                 e.preventDefault();
-                // TODO!
-                console.log('collapseAll');
+                collapseAll();
             }
         });
 
