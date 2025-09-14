@@ -6,12 +6,21 @@
 <preferences/>
 <find_panel_settings/>
 <vnodes>
-<v t="felix.20250908222018.2"><vh>first node</vh></v>
+<v t="felix.20250908222018.2"><vh>first node no body</vh></v>
 <v t="felix.20250908222032.1"><vh>second node</vh>
-<v t="felix.20250908222032.2"><vh>First child clones</vh></v>
+<v t="felix.20250908222032.2"><vh>First child clone</vh>
+<v t="felix.20250914134631.1"><vh>Child of clone</vh>
+<v t="felix.20250914134806.1"><vh>Also has child!</vh></v>
+</v>
+</v>
 <v t="felix.20250908222032.2"></v>
 <v t="felix.20250908222032.4"><vh>trailing newlines</vh></v>
 <v t="felix.20250908235832.1"><vh>last same level</vh></v>
+</v>
+<v t="felix.20250914134840.1"><vh>third top node no body</vh>
+<v t="felix.20250914134850.1"><vh>third top node child 1</vh></v>
+<v t="felix.20250914134926.1"><vh>third top node child 2</vh></v>
+<v t="felix.20250914134927.1"><vh>third top node child 3</vh></v>
 </v>
 </vnodes>
 <tnodes>
@@ -25,5 +34,16 @@ end of first body</t>
 
 </t>
 <t tx="felix.20250908235832.1">Some body text</t>
+<t tx="felix.20250914134631.1">Body of the child of a clone!</t>
+<t tx="felix.20250914134806.1">Yep, child of clone also has child!
+</t>
+<t tx="felix.20250914134840.1"></t>
+<t tx="felix.20250914134850.1">Some text in child 1
+blabla
+</t>
+<t tx="felix.20250914134926.1">Bla blabla bla,
+bla blablabla bla.</t>
+<t tx="felix.20250914134927.1">Last node of the tree's natural tree order.
+</t>
 </tnodes>
 </leo_file>

@@ -270,53 +270,112 @@
                     "gnx": 2,
                     "children": [
                         {
-                            "gnx": 3
+                            "gnx": 3,
+                            "children": [
+                                {
+                                    "gnx": 4,
+                                    "children": [
+                                        {
+                                            "gnx": 5
+                                        }
+                                    ]
+                                }
+                            ]
                         },
                         {
                             "gnx": 3
                         },
                         {
-                            "gnx": 4
+                            "gnx": 6
                         },
                         {
-                            "gnx": 5
+                            "gnx": 7
+                        }
+                    ]
+                },
+                {
+                    "gnx": 8,
+                    "children": [
+                        {
+                            "gnx": 9
+                        },
+                        {
+                            "gnx": 10
+                        },
+                        {
+                            "gnx": 11
                         }
                     ]
                 }
             ]
         };
         const data = {
-            "0": {
-                "headString": "hiddenRootNode",
-                "bodyString": "",
-                "icon": 0
-            },
             "1": {
-                "headString": "first node",
-                "bodyString": "",
-                "icon": 0
+                "headString": "first node no body",
+                "bodyString": ""
             },
             "2": {
                 "headString": "second node",
-                "bodyString": "Some body content\nmultiple lines\n\nend of first body",
-                "icon": 1
+                "bodyString": "Some body content\nmultiple lines\n\nend of first body"
             },
             "3": {
-                "headString": "First child clones",
-                "bodyString": "Some child content",
-                "icon": 5
+                "headString": "First child clone",
+                "bodyString": "Some child content"
             },
             "4": {
-                "headString": "trailing newlines",
-                "bodyString": "inside other at same level\n\n",
-                "icon": 1
+                "headString": "Child of clone",
+                "bodyString": "Body of the child of a clone!"
             },
             "5": {
+                "headString": "Also has child!",
+                "bodyString": "Yep, child of clone also has child!\n"
+            },
+            "6": {
+                "headString": "trailing newlines",
+                "bodyString": "inside other at same level\n\n"
+            },
+            "7": {
                 "headString": "last same level",
-                "bodyString": "Some body text",
-                "icon": 1
+                "bodyString": "Some body text"
+            },
+            "8": {
+                "headString": "third top node no body",
+                "bodyString": ""
+            },
+            "9": {
+                "headString": "third top node child 1",
+                "bodyString": "Some text in child 1\nblabla\n"
+            },
+            "10": {
+                "headString": "third top node child 2",
+                "bodyString": "Bla blabla bla,\nbla blablabla bla."
+            },
+            "11": {
+                "headString": "third top node child 3",
+                "bodyString": "Last node of the tree's natural tree order.\n"
             }
         };
+
+        let visitedNodes = {}; // Keys are gnx, values are node references
+        // Build clones when repeated in the tree
+        function buildClones(node) {
+            if (!node) return;
+
+            // If we've already seen this node, fill its children with JSON stringify/parse for deep copy.
+            if (visitedNodes[node.gnx]) {
+                node.children = JSON.parse(JSON.stringify(visitedNodes[node.gnx].children));
+                // Do not recurse into children, they are already built
+            } else {
+                visitedNodes[node.gnx] = node;
+                // Recur for children
+                if (node.children) {
+                    for (const child of node.children) {
+                        buildClones(child);
+                    }
+                }
+            }
+        };
+
         // Add parent references to all nodes recursively
         function buildParentRefs(node, parent = null) {
             node.parent = parent;
@@ -327,10 +386,10 @@
             }
         }
 
-        // Call it on the root
+        buildClones(tree);
         buildParentRefs(tree);
 
-        const expanded = new Set([tree]); // Root expanded initially
+        const expanded = new Set(); // No need to add the root because 'isExpanded' will return true for it
         let selectedNode = null; // Track the currently selected node
         let isDragging = false;
         let outlineProportion;
@@ -388,6 +447,7 @@
 
         function isExpanded(node) {
             // Given a node, return true if it is expanded.
+            if (!node.parent) return true; // The root node is always considered expanded
             return expanded.has(node);
         }
 
@@ -426,8 +486,8 @@
         }
 
         function hasParent(node) {
-            // Given a node, return true if it has a parent.
-            return !!node.parent;
+            // Given a node, return true if it has a parent. Except if that parent is the hidden root node.
+            return !!node.parent && !!node.parent.parent;
         }
 
         function hasThreadBack(node) {
@@ -702,6 +762,7 @@
             expanded.clear();
 
             let node = selectedNode;
+            // hasParent already excludes the hidden root node
             while (node && hasParent(node)) {
                 node = moveToParent(node);
             }
@@ -718,10 +779,10 @@
         if (tree.children && tree.children.length > 0) {
             selectedNode = tree.children[0];
         }
-        let flatRows = flattenTree(tree, expanded);
+        let flatRows = flattenTree(tree);
 
         // Flatten tree into visible rows
-        function flattenTree(node, expandedSet, depth = 0, isRoot = true) {
+        function flattenTree(node, depth = 0, isRoot = true) {
             let rows = [];
 
             // Only add non-root nodes to the rows
@@ -731,7 +792,7 @@
                     depth,
                     toggled: node.toggled || false, // Will make it render with toggled class
                     hasChildren: !!node.children && node.children.length > 0,
-                    isExpanded: expandedSet.has(node),
+                    isExpanded: isExpanded(node),
                     node
                 });
             }
@@ -740,11 +801,11 @@
             }
 
             // If expanded and has children, process them
-            if (expandedSet.has(node) && node.children) {
+            if (isExpanded(node) && node.children) {
                 for (const child of node.children) {
                     // Root node's children appear at depth 0
                     const childDepth = isRoot ? 0 : depth + 1;
-                    rows.push(...flattenTree(child, expandedSet, childDepth, false));
+                    rows.push(...flattenTree(child, childDepth, false));
                 }
             }
 
@@ -755,7 +816,7 @@
         function updateTree(newSelectedNode = null, nodeToToggle = null) {
             // Handle toggling if requested
             if (nodeToToggle) {
-                if (expanded.has(nodeToToggle)) {
+                if (isExpanded(nodeToToggle)) {
                     expanded.delete(nodeToToggle);
                 } else {
                     expanded.add(nodeToToggle);
@@ -769,7 +830,7 @@
             }
 
             // Only rebuild and redraw once
-            flatRows = flattenTree(tree, expanded);
+            flatRows = flattenTree(tree);
             renderTree();
 
             // Update body pane if selection changed
@@ -1083,6 +1144,7 @@
         window.addEventListener('DOMContentLoaded', () => {
             initializeLayout();
             applyTheme(getCurrentTheme());
+            console.log(expanded)
         });
     </script>
 </body>
