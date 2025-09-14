@@ -346,6 +346,13 @@
         const THEME_ICON = document.getElementById('toggle-icon');
         const HTML_ELEMENT = document.documentElement;
 
+        // Navigation helpers
+        function toggleSelected() {
+            if (selectedNode && selectedNode.children && selectedNode.children.length > 0) {
+                updateTree(null, selectedNode);
+            }
+        }
+
         // Select first node in the hidden root initially
         if (tree.children && tree.children.length > 0) {
             selectedNode = tree.children[0];
@@ -628,34 +635,43 @@
                 BODY_PANE.focus();
             } else if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                // TODO : toggleSelected();
+                toggleSelected();
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
-                // TODO : selectVisBack();
+                // TODO!
+                console.log('selectVisBack');
             } else if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                // TODO : selectVisNext();
+                // TODO!
+                console.log('selectVisNext');
             } else if (e.key === 'ArrowLeft') {
                 e.preventDefault();
-                // TODO : contractNodeOrGoToParent();
+                // TODO!
+                console.log('contractNodeOrGoToParent');
             } else if (e.key === 'ArrowRight') {
                 e.preventDefault();
-                // TODO : expandNodeAndGoToFirstChild();
+                // TODO!
+                console.log('expandNodeAndGoToFirstChild');
             } else if (e.key === 'PageUp') {
                 e.preventDefault();
-                // TODO : gotoFirstSiblingOrParent();
+                // TODO!
+                console.log('gotoFirstSiblingOrParent');
             } else if (e.key === 'PageDown') {
                 e.preventDefault();
-                // TODO : goToLastSiblingOrVisNext();
+                // TODO!
+                console.log('goToLastSiblingOrVisNext');
             } else if (e.key === 'Home') {
                 e.preventDefault();
-                // TODO : gotoFirstVisibleNode();
+                // TODO!
+                console.log('gotoFirstVisibleNode');
             } else if (e.key === 'End') {
                 e.preventDefault();
-                // TODO : goToLastVisibleNode();
+                // TODO!
+                console.log('goToLastVisibleNode');
             } else if (e.key === '-' && e.altKey && !e.ctrlKey && !e.metaKey) {
                 e.preventDefault();
-                // TODO : collapseAll();
+                // TODO!
+                console.log('collapseAll');
             }
         });
 
