@@ -1052,10 +1052,10 @@
         });
 
         OUTLINE_PANE.addEventListener('keydown', (e) => {
-            if (e.key === 'Tab' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+            if ((e.key === 'Enter' || e.key === 'Tab') && !e.ctrlKey && !e.altKey && !e.metaKey) {
                 e.preventDefault();
                 BODY_PANE.focus();
-            } else if (e.key === 'Enter' || e.key === ' ') {
+            } else if (e.key === ' ') {
                 e.preventDefault();
                 toggleSelected();
             } else if (e.key === 'ArrowUp') {
@@ -1092,6 +1092,22 @@
             if (e.key === 'Tab' && !e.ctrlKey && !e.altKey && !e.metaKey) {
                 e.preventDefault();
                 OUTLINE_PANE.focus();
+            } else if (e.key === 'ArrowUp' && e.altKey && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                OUTLINE_PANE.focus();
+                selectVisBack();
+            } else if (e.key === 'ArrowDown' && e.altKey && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                OUTLINE_PANE.focus();
+                selectVisNext();
+            } else if (e.key === 'ArrowLeft' && e.altKey && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                OUTLINE_PANE.focus();
+                contractNodeOrGoToParent();
+            } else if (e.key === 'ArrowRight' && e.altKey && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                OUTLINE_PANE.focus();
+                expandNodeAndGoToFirstChild();
             }
         });
 
