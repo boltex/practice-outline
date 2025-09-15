@@ -12,6 +12,7 @@
             --resizer-color: #cae1ff;
             --selected-bg: #cae1ff;
             --ancestor-bg: #eef5ff;
+            --hover-bg: #dfecff;
             --focus-outline: #0000ff;
             --text-color: #000000;
             --caret-dim-color: #888;
@@ -24,6 +25,7 @@
             --resizer-color: #454a6e;
             --selected-bg: #454a6e;
             --ancestor-bg: #2d3250;
+            --hover-bg: #3a3f5e;
             --focus-outline: #7aa2f7;
             --text-color: #cdd6f4;
             --caret-dim-color: #999;
@@ -228,6 +230,15 @@
             padding: 2px 0 2px 26px;
             margin-right: 1rem;
             border-radius: 4px;
+        }
+
+        /* node-text light hover color */
+        .node-text:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .selected>.node-text:hover {
+            background-color: var(--selected-bg);
         }
 
         /* Caret glyphs */
