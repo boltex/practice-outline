@@ -333,6 +333,42 @@
         #theme-toggle:active #toggle-icon {
             top: 25px;
         }
+
+        #layout-toggle {
+            position: fixed;
+            top: 20px;
+            right: 60px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--resizer-color);
+            color: var(--text-color);
+            border: 2px solid var(--text-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            line-height: 1;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            transition: transform 0.2s ease;
+            overflow: hidden;
+        }
+
+        #layout-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        #layout-icon {
+            position: relative;
+            top: 0;
+            transition: transform 0.3s ease;
+        }
+
+        #layout-toggle:active #layout-icon {
+            transform: rotate(90deg);
+        }
     </style>
 </head>
 
@@ -341,6 +377,7 @@
     <div id="vertical-resizer"></div>
     <div id="body-pane" tabindex="0" contenteditable="plaintext-only"></div>
     <button id="theme-toggle" aria-label="Toggle dark/light mode"><span id="toggle-icon">🌓</span></button>
+    <button id="layout-toggle" aria-label="Toggle layout orientation"><span id="layout-icon">📐</span></button>
     <script>
         const tree = {
             "gnx": 0,
@@ -496,6 +533,8 @@
         const VERTICAL_RESIZER = document.getElementById('vertical-resizer');
         const THEME_TOGGLE = document.getElementById('theme-toggle');
         const THEME_ICON = document.getElementById('toggle-icon');
+        const LAYOUT_TOGGLE = document.getElementById('layout-toggle');
+        const LAYOUT_ICON = document.getElementById('layout-icon');
         const HTML_ELEMENT = document.documentElement;
 
         // Navigation helpers
@@ -1092,7 +1131,7 @@
                 document.removeEventListener('touchmove', handleDrag);
                 document.removeEventListener('touchend', stopDrag);
                 updateProportion();
-                // renderTree();
+                renderTree();
             }
         }
 
@@ -1260,6 +1299,28 @@
             return saved ? parseFloat(saved) : null; // Return null instead of default value
         }
 
+        const applyLayout = (layout) => {
+            localStorage.setItem('layout', layout);
+            console.log(`TODO: Switching to ${layout} layout`);
+
+            // Rotate the icon based on layout
+            if (layout === 'horizontal') {
+                LAYOUT_ICON.style.transform = 'rotate(90deg)';
+            } else {
+                LAYOUT_ICON.style.transform = 'rotate(0deg)';
+            }
+        };
+
+        LAYOUT_TOGGLE.addEventListener('click', () => {
+            const currentLayout = getCurrentLayout();
+            const newLayout = currentLayout === 'vertical' ? 'horizontal' : 'vertical';
+            applyLayout(newLayout);
+        });
+
+        const getCurrentLayout = () => {
+            return localStorage.getItem('layout') || 'vertical';
+        };
+
         function initializeLayout() {
             // Block all text changes (typing, delete, paste, etc.)
             BODY_PANE.addEventListener("beforeinput", (e) => {
@@ -1284,9 +1345,9 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
+            applyLayout(getCurrentLayout());
             applyTheme(getCurrentTheme());
             initializeLayout();
-            console.log(expanded)
         });
     </script>
 </body>
