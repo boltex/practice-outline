@@ -765,6 +765,7 @@
             }
         };
 
+        // Navigation actions
         function expandNodeAndGoToFirstChild() {
             // If the presently selected node has children, expand it if needed and go to the first child.
             let node = selectedNode;
@@ -956,8 +957,10 @@
                 nodeToToggle.toggled = true; // Mark as toggled
             }
 
+            const isNew = newSelectedNode && newSelectedNode !== selectedNode;
+
             // Handle selection if requested
-            if (newSelectedNode) {
+            if (isNew) {
                 selectedNode = newSelectedNode;
             }
 
@@ -966,7 +969,7 @@
             renderTree();
 
             // Update body pane if selection changed
-            if (newSelectedNode) {
+            if (isNew) {
                 if (newSelectedNode && data[newSelectedNode.gnx]) {
                     BODY_PANE.textContent = data[newSelectedNode.gnx].bodyString || "";
                 } else {
@@ -1008,6 +1011,10 @@
                 const row = flatRows[i];
                 const div = document.createElement("div");
                 div.className = "node";
+                if (row.label) {
+                    div.title = row.label;
+                }
+
                 if (row.node === selectedNode) {
                     div.classList.add("selected");
                 } else if (selectedNode && isAncestor(row.node, selectedNode)) {
@@ -1283,6 +1290,7 @@
             currentTheme = theme;
             HTML_ELEMENT.setAttribute('data-theme', theme);
             localStorage.setItem('theme', theme);
+            THEME_TOGGLE.title = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
             THEME_ICON.innerHTML = theme === 'dark' ? '🌙' : '☀️';
         };
 
@@ -1303,7 +1311,7 @@
             localStorage.setItem('layout', layout);
             console.log(`TODO: Switching to ${layout} layout`);
 
-            // Rotate the icon based on layout
+            LAYOUT_TOGGLE.title = layout === 'vertical' ? 'Switch to horizontal layout' : 'Switch to vertical layout';
             if (layout === 'horizontal') {
                 LAYOUT_ICON.style.transform = 'rotate(90deg)';
             } else {
