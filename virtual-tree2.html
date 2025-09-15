@@ -582,9 +582,9 @@
         let selectedNode = null; // Track the currently selected node
         let currentTheme = 'light'; // Default theme
         let isDragging = false;
-        let mainRatio = 0.25; // Proportion between outline-find-container and body-pane widths (defaults to 1/4)
+        let mainRatio = 0.25; // Default proportion between outline-find-container and body-pane widths (defaults to 1/4)
         let secondaryIsDragging = false;
-        let secondaryRatio = 0.75; // Proportion between the outline-pane and the find-pane (defaults to 1/2)
+        let secondaryRatio = 0.75; // Default proportion between the outline-pane and the find-pane (defaults to 3/4)
         const minWidth = 0;
         const minHeight = 20;
 
@@ -1151,7 +1151,7 @@
 
         function getSavedMainRatio() {
             const saved = localStorage.getItem('mainRatio');
-            return saved ? parseFloat(saved) : 0.25; // Default to 25% if not saved
+            return saved ? parseFloat(saved) : mainRatio; // Use the variable's default value
         }
 
         function updateProportion() {
@@ -1215,7 +1215,7 @@
 
         function getSavedSecondaryRatio() {
             const saved = localStorage.getItem('secondaryRatio');
-            return saved ? parseFloat(saved) : 0.75; // Default to 75% if not saved
+            return saved ? parseFloat(saved) : secondaryRatio; // Use the variable's default value
         }
 
         function updateSecondaryProportion() {
