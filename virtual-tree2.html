@@ -44,7 +44,7 @@
         }
 
         .icon3 {
-            background-image: url('data:image/svg+xml;utf8, <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none"><path d="M7.074 4.5v8h1v-8z" fill="%23e54a16"/><path d="M0 4v9h15.15V4zm1 1h13.15v7H1z" fill="%234d4d4d"/></svg>');
+            background-image: url('data:image/svg+xml;utf8, <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none">   <path d="M7.074 4.5v8h1v-8z" fill="%23e54a16"/><path d="M0 4v9h15.15V4zm1 1h13.15v7H1z" fill="%234d4d4d"/><path d="M9.075 6v5h4.075V6zm1 1h2.076v3h-2.076z" fill="%2342a5f5"/></svg>');
         }
 
         .icon4 {
@@ -1211,6 +1211,20 @@
                 e.preventDefault();
                 OUTLINE_PANE.focus();
                 expandNodeAndGoToFirstChild();
+            }
+        });
+
+        // Listen to ctrl+F (find) and ctrl+M (toggle mark) from anywhere
+        window.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'f' && e.ctrlKey && !e.altKey && !e.metaKey) {
+                e.preventDefault();
+                OUTLINE_PANE.focus();
+            } else if (e.key.toLowerCase() === 'm' && e.ctrlKey && !e.altKey && !e.metaKey) {
+                e.preventDefault();
+                if (selectedNode && selectedNode.gnx) {
+                    data[selectedNode.gnx].icon ^= 2; // Toggle mark bit
+                    renderTree(); // Re-render to update icons
+                }
             }
         });
 
