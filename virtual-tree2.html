@@ -9,6 +9,7 @@
             /* Light theme (default) */
             --background-color: #ffffec;
             --body-pane-color: #fff6f5;
+            --find-pane-color: #f9f9f9;
             --resizer-color: #cae1ff;
             --selected-bg: #cae1ff;
             --ancestor-bg: #eef5ff;
@@ -22,6 +23,7 @@
             /* Dark theme */
             --background-color: #1e1e2e;
             --body-pane-color: #2a2536;
+            --find-pane-color: #23202e;
             --resizer-color: #454a6e;
             --selected-bg: #454a6e;
             --ancestor-bg: #2d3250;
@@ -109,23 +111,22 @@
         }
 
         #outline-pane {
-            width: 250px;
             white-space: nowrap;
-            padding: 1rem 0 0 0;
+            /* padding: 1rem 0 0 0; */
             overflow-x: hidden;
             overflow-y: auto;
             font-family: sans-serif;
         }
 
-        #vertical-resizer {
+        #main-resizer {
             position: relative;
             width: 5px;
             cursor: ew-resize;
             background-color: var(--resizer-color);
         }
 
-        #vertical-resizer::before,
-        #vertical-resizer::after {
+        #main-resizer::before,
+        #main-resizer::after {
             /* Invisible extension width extended with before/after below */
             content: "";
             position: absolute;
@@ -135,12 +136,61 @@
             cursor: ew-resize;
         }
 
-        #vertical-resizer::before {
+        #main-resizer::before {
             left: -5px;
         }
 
-        #vertical-resizer::after {
+        #main-resizer::after {
             right: -5px;
+        }
+
+        /* Make the outline-find-container a flex container with column direction */
+        #outline-find-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* The secondary resizer should have similar properties to the main resizer */
+        #secondary-resizer {
+            position: relative;
+            height: 5px;
+            width: 100%;
+            cursor: ns-resize;
+            background-color: var(--resizer-color);
+        }
+
+        #secondary-resizer::before,
+        #secondary-resizer::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            cursor: ns-resize;
+        }
+
+        #secondary-resizer::before {
+            top: -5px;
+        }
+
+        #secondary-resizer::after {
+            bottom: -5px;
+        }
+
+        /* Ensure outline-pane and find-pane can grow/shrink appropriately */
+        #outline-pane,
+        #find-pane {
+            overflow-y: auto;
+            flex: 1 1 0;
+        }
+
+        /* The find-pane initially can be smaller */
+        #find-pane {
+            /* flex: 0.5 1 0;
+            min-height: 20px; */
+            background-color: var(--find-pane-color);
         }
 
         #body-pane {
@@ -197,6 +247,15 @@
             border-radius: 4px;
         }
 
+        /* node-text light hover color */
+        .node-text:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .selected>.node-text:hover {
+            background-color: var(--selected-bg);
+        }
+
         .node {
             position: absolute;
             white-space: nowrap;
@@ -230,15 +289,6 @@
             padding: 2px 0 2px 26px;
             margin-right: 1rem;
             border-radius: 4px;
-        }
-
-        /* node-text light hover color */
-        .node-text:hover {
-            background-color: var(--hover-bg);
-        }
-
-        .selected>.node-text:hover {
-            background-color: var(--selected-bg);
         }
 
         /* Caret glyphs */
@@ -373,8 +423,18 @@
 </head>
 
 <body>
-    <div id="outline-pane" tabindex="0"></div>
-    <div id="vertical-resizer"></div>
+    <!--
+      * Layout *
+      The main body is split in two (outline-find-container and body-pane) by by the main-resizer.
+      The outline-find-container is split in two (outline-pane and find-pane) by the secondary-resizer.
+      So in total, there are three panes and two resizers. The rest are just floating buttons which are not part of the layout.
+    -->
+    <div id="outline-find-container">
+        <div id="outline-pane" tabindex="0"></div>
+        <div id="secondary-resizer"></div>
+        <div id="find-pane"></div>
+    </div>
+    <div id="main-resizer"></div>
     <div id="body-pane" tabindex="0" contenteditable="plaintext-only"></div>
     <button id="theme-toggle" aria-label="Toggle dark/light mode"><span id="toggle-icon">🌓</span></button>
     <button id="layout-toggle" aria-label="Toggle layout orientation"><span id="layout-icon">📐</span></button>
@@ -520,17 +580,23 @@
 
         const expanded = new Set(); // No need to add the root because 'isExpanded' will return true for it
         let selectedNode = null; // Track the currently selected node
-        let isDragging = false;
-        let outlineProportion;
         let currentTheme = 'light'; // Default theme
+        let isDragging = false;
+        let mainRatio = 0.25; // Proportion between outline-find-container and body-pane widths (defaults to 1/4)
+        let secondaryIsDragging = false;
+        let secondaryRatio = 0.75; // Proportion between the outline-pane and the find-pane (defaults to 1/2)
         const minWidth = 0;
+        const minHeight = 20;
 
         // Constants
         const ROW_HEIGHT = 26;
         const LEFT_OFFSET = 16; // Padding from left edge
+        const OUTLINE_CONTAINER = document.getElementById("outline-find-container");
         const OUTLINE_PANE = document.getElementById("outline-pane");
         const BODY_PANE = document.getElementById("body-pane");
-        const VERTICAL_RESIZER = document.getElementById('vertical-resizer');
+        const VERTICAL_RESIZER = document.getElementById('main-resizer');
+        const FIND_PANE = document.getElementById("find-pane");
+        const HORIZONTAL_RESIZER = document.getElementById('secondary-resizer');
         const THEME_TOGGLE = document.getElementById('theme-toggle');
         const THEME_ICON = document.getElementById('toggle-icon');
         const LAYOUT_TOGGLE = document.getElementById('layout-toggle');
@@ -566,6 +632,18 @@
             }
             return ancestors;
         };
+
+        function isAncestorOf(possibleAncestor, descendant) {
+            // Return true if possibleAncestor is an ancestor of descendant.
+            let current = descendant.parent;
+            while (current) {
+                if (current === possibleAncestor) {
+                    return true;
+                }
+                current = current.parent;
+            }
+            return false;
+        }
 
         function hasChildren(node) {
             // Given a node, return true if it has children.
@@ -978,17 +1056,26 @@
             }
         }
 
-        function isAncestor(possibleAncestor, descendant) {
-            // Check if possibleAncestor is actually an ancestor of descendant
-            // by walking up the parent chain
-            let current = descendant.parent;
-            while (current) {
-                if (current === possibleAncestor) {
-                    return true;
+        // Render Utilities
+        function throttle(func, limit) {
+            let lastCall = 0;
+            let timeout;
+
+            return function (...args) {
+                const now = Date.now();
+                if (timeout) {
+                    clearTimeout(timeout);
                 }
-                current = current.parent;
-            }
-            return false;
+                if (now - lastCall >= limit) {
+                    lastCall = now;
+                    func.apply(this, args);
+                } else {
+                    timeout = setTimeout(() => {
+                        lastCall = Date.now();
+                        func.apply(this, args);
+                    }, limit - (now - lastCall));
+                }
+            };
         }
 
         // Render visible rows only
@@ -1017,7 +1104,7 @@
 
                 if (row.node === selectedNode) {
                     div.classList.add("selected");
-                } else if (selectedNode && isAncestor(row.node, selectedNode)) {
+                } else if (selectedNode && isAncestorOf(row.node, selectedNode)) {
                     div.classList.add("ancestor");
                 }
 
@@ -1056,51 +1143,29 @@
             }
         }
 
-        // Save outline proportion to localStorage
-        function saveOutlineProportion(proportion) {
-            localStorage.setItem('outlineProportion', proportion);
+        function saveMainRatio(proportion) {
+            localStorage.setItem('mainRatio', proportion);
         }
 
-        const throttledSaveOutlineProportion = throttle(saveOutlineProportion, 500);
+        const throttledSaveMainRatio = throttle(saveMainRatio, 500);
 
-        function getSavedOutlineProportion() {
-            const saved = localStorage.getItem('outlineProportion');
+        function getSavedMainRatio() {
+            const saved = localStorage.getItem('mainRatio');
             return saved ? parseFloat(saved) : 0.25; // Default to 25% if not saved
         }
 
         function updateProportion() {
-            outlineProportion = OUTLINE_PANE.offsetWidth / window.innerWidth;
-            throttledSaveOutlineProportion(outlineProportion);
+            mainRatio = OUTLINE_CONTAINER.offsetWidth / window.innerWidth;
+            throttledSaveMainRatio(mainRatio);
         }
 
-        function throttle(func, limit) {
-            let lastCall = 0;
-            let timeout;
-
-            return function (...args) {
-                const now = Date.now();
-                if (timeout) {
-                    clearTimeout(timeout);
-                }
-                if (now - lastCall >= limit) {
-                    lastCall = now;
-                    func.apply(this, args);
-                } else {
-                    timeout = setTimeout(() => {
-                        lastCall = Date.now();
-                        func.apply(this, args);
-                    }, limit - (now - lastCall));
-                }
-            };
-        }
-
-        function updateOutlineWidth() {
-            let newWidth = window.innerWidth * outlineProportion;
+        function updateOutlineContainerSize() {
+            let newWidth = window.innerWidth * mainRatio;
             // Respect minimum width
             if (newWidth < minWidth) {
                 newWidth = minWidth;
             }
-            OUTLINE_PANE.style.width = `${newWidth}px`;
+            OUTLINE_CONTAINER.style.width = `${newWidth}px`;
             renderTree();
         }
 
@@ -1112,9 +1177,9 @@
 
             const newWidth = clientX;
             if (newWidth >= minWidth) {
-                OUTLINE_PANE.style.width = newWidth + 'px';
+                OUTLINE_CONTAINER.style.width = newWidth + 'px';
             } else {
-                OUTLINE_PANE.style.width = minWidth + 'px';
+                OUTLINE_CONTAINER.style.width = minWidth + 'px';
             }
             renderTree();
         }, 33);
@@ -1142,10 +1207,94 @@
             }
         }
 
+        function saveSecondaryRatio(proportion) {
+            localStorage.setItem('secondaryRatio', proportion);
+        }
+
+        const throttledSaveSecondaryRatio = throttle(saveSecondaryRatio, 500);
+
+        function getSavedSecondaryRatio() {
+            const saved = localStorage.getItem('secondaryRatio');
+            return saved ? parseFloat(saved) : 0.75; // Default to 75% if not saved
+        }
+
+        function updateSecondaryProportion() {
+            secondaryRatio = OUTLINE_PANE.offsetHeight / OUTLINE_CONTAINER.offsetHeight;
+            throttledSaveSecondaryRatio(secondaryRatio);
+        }
+
+        function updateOutlinePaneSize() {
+            const containerHeight = OUTLINE_CONTAINER.offsetHeight;
+            let newHeight = containerHeight * secondaryRatio;
+
+            // Respect minimum heights
+            if (newHeight < minHeight) {
+                newHeight = minHeight;
+            } else if (newHeight > containerHeight - minHeight) {
+                newHeight = containerHeight - minHeight;
+            }
+
+            // Set flex properties to control the distribution
+            OUTLINE_PANE.style.flex = `0 0 ${newHeight}px`;
+            FIND_PANE.style.flex = `1 1 auto`; // Let it take the remaining space
+
+            renderTree();
+        }
+
+        const handleSecondaryDrag = throttle(function (e) {
+            let clientY = e.clientY;
+            if (e.touches) {
+                clientY = e.touches[0].clientY;
+            }
+
+            // Get the top position of the outline-find-container
+            const containerRect = OUTLINE_CONTAINER.getBoundingClientRect();
+            const relativeY = clientY - containerRect.top;
+            const containerHeight = OUTLINE_CONTAINER.offsetHeight;
+
+            // Ensure we respect minimum heights
+            if (relativeY >= minHeight && relativeY <= containerHeight - minHeight) {
+                // Set flex properties to control the distribution
+                OUTLINE_PANE.style.flex = `0 0 ${relativeY}px`;
+                FIND_PANE.style.flex = `1 1 auto`; // Let it take the remaining space
+            }
+
+            renderTree();
+        }, 33);
+
+        function startSecondaryDrag(e) {
+            secondaryIsDragging = true;
+            document.body.classList.add('dragging');
+            e.preventDefault();
+            document.addEventListener('mousemove', handleSecondaryDrag);
+            document.addEventListener('mouseup', stopSecondaryDrag);
+            document.addEventListener('touchmove', handleSecondaryDrag, { passive: false });
+            document.addEventListener('touchend', stopSecondaryDrag);
+        }
+
+        function stopSecondaryDrag() {
+            if (secondaryIsDragging) {
+                secondaryIsDragging = false;
+                document.body.classList.remove('dragging');
+                document.removeEventListener('mousemove', handleSecondaryDrag);
+                document.removeEventListener('mouseup', stopSecondaryDrag);
+                document.removeEventListener('touchmove', handleSecondaryDrag);
+                document.removeEventListener('touchend', stopSecondaryDrag);
+                updateSecondaryProportion();
+                renderTree();
+            }
+        }
+
+
         // Initialize resizer
         VERTICAL_RESIZER.addEventListener('mousedown', startDrag);
         VERTICAL_RESIZER.addEventListener('touchstart', startDrag);
-        window.addEventListener('resize', throttle(updateOutlineWidth, 67));
+        HORIZONTAL_RESIZER.addEventListener('mousedown', startSecondaryDrag);
+        HORIZONTAL_RESIZER.addEventListener('touchstart', startSecondaryDrag);
+        window.addEventListener('resize', throttle(() => {
+            updateOutlineContainerSize();
+            updateOutlinePaneSize();
+        }, 67));
 
         // Prevent text selection on double-click
         OUTLINE_PANE.addEventListener("mousedown", e => {
@@ -1302,14 +1451,14 @@
             renderTree(); // Re-render to update icons
         });
 
-        function getSavedOutlineProportion() {
-            const saved = localStorage.getItem('outlineProportion');
-            return saved ? parseFloat(saved) : null; // Return null instead of default value
+        function getSavedMainRatio() {
+            const saved = localStorage.getItem('mainRatio');
+            return saved ? parseFloat(saved) : null; // Return null if not found
         }
 
         const applyLayout = (layout) => {
             localStorage.setItem('layout', layout);
-            console.log(`TODO: Switching to ${layout} layout`);
+            console.log(`TODO: (in 'applyLayout') Switching to ${layout} layout`);
 
             LAYOUT_TOGGLE.title = layout === 'vertical' ? 'Switch to horizontal layout' : 'Switch to vertical layout';
             if (layout === 'horizontal') {
@@ -1340,14 +1489,13 @@
                 e.preventDefault();
             });
 
-            const savedProportion = getSavedOutlineProportion();
+            const savedOutlineBodyRatio = getSavedMainRatio();
 
-            if (savedProportion !== null) {
-                outlineProportion = savedProportion;
-                updateOutlineWidth();
-            } else {
-                outlineProportion = OUTLINE_PANE.offsetWidth / window.innerWidth;
+            if (savedOutlineBodyRatio !== null) {
+                mainRatio = savedOutlineBodyRatio;
+                console.log(`Restored saved outline proportion: ${mainRatio}`);
             }
+            updateOutlineContainerSize();
             // Initial render
             renderTree();
         }
