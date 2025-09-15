@@ -30,9 +30,7 @@ multiple lines
 
 end of first body</t>
 <t tx="felix.20250908222032.2">Some child content</t>
-<t tx="felix.20250908222032.4">inside other at same level
-
-</t>
+<t tx="felix.20250908222032.4">inside other at same level</t>
 <t tx="felix.20250908235832.1">Some body text</t>
 <t tx="felix.20250914134631.1">Body of the child of a clone!</t>
 <t tx="felix.20250914134806.1">Yep, child of clone also has child!
