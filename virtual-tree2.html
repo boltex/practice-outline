@@ -29,8 +29,6 @@
             --caret-dim-color: #999;
         }
 
-
-
         .icon0 {
             background-image: url('data:image/svg+xml;utf8, <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none"><path d="M0 4v9h15.15V4zm1 1h13.15v7H1z" fill="%234d4d4d"/></svg>');
         }
@@ -213,17 +211,21 @@
         .caret {
             grid-column: 1;
             display: inline-block;
-            width: 1em;
-            cursor: pointer;
+            width: 32px;
+            height: 26px;
+            position: relative;
+            left: -16px;
             user-select: none;
         }
 
         .node-text {
             background-repeat: no-repeat;
+            background-position-x: 3px;
+            background-position-y: 2px;
+            background-size: 18px 18px;
             grid-column: 2;
             display: block;
-            cursor: pointer;
-            padding: 2px 0 2px 20px;
+            padding: 2px 0 2px 26px;
             margin-right: 1rem;
             border-radius: 4px;
         }
@@ -231,6 +233,8 @@
         /* Caret glyphs */
         .caret::after {
             display: inline-block;
+            position: relative;
+            left: 16px;
             transform-origin: 50% 50%;
             transition: transform 160ms cubic-bezier(.2, .9, .3, 1), color 120ms;
         }
@@ -1101,18 +1105,19 @@
             const row = flatRows[rowIndex];
 
             // Handle different click targets
-            if (event.target.classList.contains('node-text')) {
-                event.stopPropagation();
-                if (row.node !== selectedNode) {
-                    updateTree(row.node); // Just selection
-                }
-            } else if (event.target.classList.contains('caret') && row.hasChildren) {
+            if (event.target.classList.contains('caret') && row.hasChildren) {
                 event.stopPropagation();
                 // Both toggle and select in one operation
                 updateTree(
                     row.node !== selectedNode ? row.node : null,
                     row.node
                 );
+            } else {
+                // Rest of the node (including icon and text)
+                event.stopPropagation();
+                if (row.node !== selectedNode) {
+                    updateTree(row.node); // Just selection
+                }
             }
         });
 
