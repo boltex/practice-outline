@@ -1490,12 +1490,20 @@
             });
 
             const savedOutlineBodyRatio = getSavedMainRatio();
+            const savedOutlineFindRatio = getSavedSecondaryRatio();
 
             if (savedOutlineBodyRatio !== null) {
                 mainRatio = savedOutlineBodyRatio;
                 console.log(`Restored saved outline proportion: ${mainRatio}`);
             }
+            if (savedOutlineFindRatio !== null) {
+                secondaryRatio = savedOutlineFindRatio;
+                console.log(`Restored saved outline-find proportion: ${secondaryRatio}`);
+            }
+
             updateOutlineContainerSize();
+            updateOutlinePaneSize();
+
             // Initial render
             renderTree();
         }
