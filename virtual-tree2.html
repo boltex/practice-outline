@@ -853,7 +853,7 @@
                     node.toggled = true; // Mark as toggled
                 }
                 node = moveToFirstChild(node);
-                updateTree(node);
+                selectAndOrToggleAndRedraw(node);
             }
         }
 
@@ -861,7 +861,7 @@
             // If the presently selected node is expanded, collapse it. Otherwise go to the parent.
             let node = selectedNode;
             if (hasChildren(node) && isExpanded(node)) {
-                updateTree(null, node);
+                selectAndOrToggleAndRedraw(null, node);
             } else if (hasParent(node)) {
                 const parent = moveToParent(node);
                 if (isVisible(parent)) {
@@ -872,7 +872,7 @@
                             child.toggled = true; // Mark as toggled
                         }
                     }
-                    updateTree(parent);
+                    selectAndOrToggleAndRedraw(parent);
                 }
             }
         }
@@ -882,7 +882,7 @@
             let node = selectedNode;
             if (moveToVisBack(node)) {
                 node = moveToVisBack(node);
-                updateTree(node);
+                selectAndOrToggleAndRedraw(node);
             }
         }
 
@@ -891,7 +891,7 @@
             let node = selectedNode;
             if (moveToVisNext(node)) {
                 node = moveToVisNext(node);
-                updateTree(node);
+                selectAndOrToggleAndRedraw(node);
             }
         }
 
@@ -903,7 +903,7 @@
                     node = moveToBack(node);
                 }
             }
-            updateTree(node);
+            selectAndOrToggleAndRedraw(node);
         };
 
         function goToLastSibling() {
@@ -914,7 +914,7 @@
                     node = moveToNext(node);
                 }
             }
-            updateTree(node);
+            selectAndOrToggleAndRedraw(node);
         };
 
         function gotoFirstSiblingOrParent() {
@@ -928,7 +928,7 @@
                 // No need to check visibility, parent always is.
                 node = moveToParent(node);
             }
-            updateTree(node);
+            selectAndOrToggleAndRedraw(node);
         };
 
         function goToLastSiblingOrVisNext() {
@@ -941,7 +941,7 @@
             } else if (moveToVisNext(node)) {
                 node = moveToVisNext(node);
             }
-            if (node) updateTree(node);
+            if (node) selectAndOrToggleAndRedraw(node);
         };
 
 
@@ -950,7 +950,7 @@
             const firstNode = moveToFirstChild(tree);
             if (firstNode) {
                 // No need to check visibility, first node always is.
-                updateTree(firstNode);
+                selectAndOrToggleAndRedraw(firstNode);
             }
         };
 
@@ -965,7 +965,7 @@
                     break;
                 }
             }
-            if (node) updateTree(node);
+            if (node) selectAndOrToggleAndRedraw(node);
         };
 
         function collapseAll() {
@@ -977,12 +977,12 @@
             while (node && hasParent(node)) {
                 node = moveToParent(node);
             }
-            if (node) updateTree(node);
+            if (node) selectAndOrToggleAndRedraw(node);
         };
 
         function toggleSelected() {
             if (selectedNode && selectedNode.children && selectedNode.children.length > 0) {
-                updateTree(null, selectedNode);
+                selectAndOrToggleAndRedraw(null, selectedNode);
             }
         }
 
@@ -1024,7 +1024,7 @@
         }
 
         // Selects and/or toggles a node
-        function updateTree(newSelectedNode = null, nodeToToggle = null) {
+        function selectAndOrToggleAndRedraw(newSelectedNode = null, nodeToToggle = null) {
             // Handle toggling if requested
             if (nodeToToggle) {
                 if (isExpanded(nodeToToggle)) {
@@ -1053,6 +1053,24 @@
                 } else {
                     BODY_PANE.textContent = "";
                 }
+                scrollSelectedNodeIntoView();
+            }
+        }
+
+        function scrollSelectedNodeIntoView() {
+            if (!selectedNode) return;
+
+            const selectedIndex = flatRows.findIndex(row => row.node === selectedNode);
+            if (selectedIndex === -1) return; // Not found (shouldn't happen)
+            const nodePosition = selectedIndex * ROW_HEIGHT;
+
+            const scrollTop = OUTLINE_PANE.scrollTop;
+            const viewportHeight = OUTLINE_PANE.clientHeight;
+
+            if (nodePosition < scrollTop) {
+                OUTLINE_PANE.scrollTop = nodePosition;
+            } else if (nodePosition + ROW_HEIGHT > scrollTop + viewportHeight) {
+                OUTLINE_PANE.scrollTop = nodePosition - viewportHeight + ROW_HEIGHT;
             }
         }
 
@@ -1314,7 +1332,7 @@
             if (event.target.classList.contains('caret') && row.hasChildren) {
                 event.stopPropagation();
                 // Both toggle and select in one operation
-                updateTree(
+                selectAndOrToggleAndRedraw(
                     row.node !== selectedNode ? row.node : null,
                     row.node
                 );
@@ -1322,7 +1340,7 @@
                 // Rest of the node (including icon and text)
                 event.stopPropagation();
                 if (row.node !== selectedNode) {
-                    updateTree(row.node); // Just selection
+                    selectAndOrToggleAndRedraw(row.node); // Just selection
                 }
             }
         });
@@ -1340,7 +1358,7 @@
                     const row = flatRows[rowIndex];
                     if (row.hasChildren) {
                         // Handle both selection and toggle in one update
-                        updateTree(
+                        selectAndOrToggleAndRedraw(
                             row.node !== selectedNode ? row.node : null,
                             row.node
                         );
