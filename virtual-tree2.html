@@ -198,6 +198,7 @@
             height: var(--main-resizer-height);
             cursor: var(--main-resizer-cursor);
             background-color: var(--resizer-color);
+            flex-shrink: 0;
         }
 
         #main-resizer::before,
@@ -233,6 +234,7 @@
             width: var(--secondary-resizer-width);
             cursor: var(--secondary-resizer-cursor);
             background-color: var(--resizer-color);
+            flex-shrink: 0;
         }
 
         #secondary-resizer::before,
@@ -494,20 +496,32 @@
             transition: transform 0.3s ease;
         }
 
-        /* find panel controls */
         #find-pane .find-controls {
+            font-family: sans-serif;
             display: flex;
-            gap: 1rem;
+            gap: 0.5rem;
             padding: 0.5rem;
             align-items: flex-start;
             flex-wrap: wrap;
+        }
+
+        #find-pane #find-input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 0.4rem 0.5rem;
+            margin: 0;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            background: transparent;
+            color: inherit;
+            font-family: sans-serif;
         }
 
         #find-pane .find-col {
             display: flex;
             flex-direction: column;
             gap: 0.35rem;
-            min-width: 160px;
+            min-width: 110px;
         }
 
         #find-pane .find-col label {
@@ -545,9 +559,9 @@
         <div id="outline-pane" tabindex="0"></div>
         <div id="secondary-resizer"></div>
         <div id="find-pane">
-            <input id="find-input" type="text" placeholder="&lt;find pattern here&gt;" aria-label="Find pattern">
 
             <div class="find-controls" role="region" aria-label="Find options">
+                <input id="find-input" type="text" placeholder="&lt;find pattern here&gt;" aria-label="Find pattern">
                 <div class="find-col checkboxes" aria-hidden="false">
                     <label for="opt-whole">
                         <input id="opt-whole" type="checkbox" name="find-option" />
@@ -568,20 +582,30 @@
                 </div>
 
                 <div class="find-col radios" role="radiogroup" aria-label="Search scope">
-                    <label>
-                        <input type="radio" name="find-scope" value="entire" checked />
+                    <label for="scope-entire">
+                        <input id="scope-entire" type="radio" name="find-scope" value="entire" checked />
                         Entire Outline
                     </label>
-                    <label>
-                        <input type="radio" name="find-scope" value="suboutline" />
+                    <label for="scope-sub">
+                        <input id="scope-sub" type="radio" name="find-scope" value="suboutline" />
                         Suboutline Only
                     </label>
-                    <label>
-                        <input type="radio" name="find-scope" value="node" />
+                    <label for="scope-node">
+                        <input id="scope-node" type="radio" name="find-scope" value="node" />
                         Node Only
                     </label>
+                    <label for="opt-head">
+                        <input id="opt-head" type="checkbox" name="find-target" />
+                        Search Headline
+                    </label>
+                    <label for="opt-body">
+                        <input id="opt-body" type="checkbox" name="find-target" />
+                        Search Body
+                    </label>
+
                 </div>
             </div>
+
         </div>
     </div>
     <div id="main-resizer"></div>
