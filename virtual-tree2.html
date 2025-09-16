@@ -23,12 +23,10 @@
 
             --main-resizer-width: 5px;
             --main-resizer-height: 100%;
-
             --main-resizer-cursor: ew-resize;
 
             --main-resizer-extension-width: 5px;
             --main-resizer-extension-height: 100%;
-            --main-resizer-extension-cursor: ew-resize;
 
             --main-resizer-before-top: unset;
             --main-resizer-before-left: -5px;
@@ -41,12 +39,10 @@
 
             --secondary-resizer-width: 100%;
             --secondary-resizer-height: 5px;
-
             --secondary-resizer-cursor: ns-resize;
 
             --secondary-resizer-extension-width: 100%;
             --secondary-resizer-extension-height: 5px;
-            --secondary-resizer-extension-cursor: ns-resize;
 
             --secondary-resizer-before-top: -5px;
             --secondary-resizer-before-left: unset;
@@ -69,41 +65,37 @@
         }
 
         [data-layout="horizontal"] {
-            /*  horizontal layout */
+            /* horizontal layout */
             /* body contains both outline-find-container, main splitter and body-pane */
-            --main-direction: row;
+            --main-direction: column;
 
-            --main-resizer-width: 5px;
-            --main-resizer-height: 100%;
+            --main-resizer-width: 100%;
+            --main-resizer-height: 5px;
+            --main-resizer-cursor: ns-resize;
 
-            --main-resizer-cursor: ew-resize;
+            --main-resizer-extension-width: 100%;
+            --main-resizer-extension-height: 5px;
 
-            --main-resizer-extension-width: 5px;
-            --main-resizer-extension-height: 100%;
-            --main-resizer-extension-cursor: ew-resize;
-
-            --main-resizer-before-top: unset;
-            --main-resizer-before-left: -5px;
-            --main-resizer-after-right: -5px;
-            --main-resizer-after-bottom: unset;
+            --main-resizer-before-top: -5px;
+            --main-resizer-before-left: unset;
+            --main-resizer-after-right: unset;
+            --main-resizer-after-bottom: -5px;
 
             /* outline-find-container contains outline-pane, secondary splitter and find-pane */
-            --secondary-direction: column;
+            --secondary-direction: row;
             --secondary-height: 100%;
 
-            --secondary-resizer-width: 100%;
-            --secondary-resizer-height: 5px;
+            --secondary-resizer-width: 5px;
+            --secondary-resizer-height: 100%;
+            --secondary-resizer-cursor: ew-resize;
 
-            --secondary-resizer-cursor: ns-resize;
+            --secondary-resizer-extension-width: 5px;
+            --secondary-resizer-extension-height: 100%;
 
-            --secondary-resizer-extension-width: 100%;
-            --secondary-resizer-extension-height: 5px;
-            --secondary-resizer-extension-cursor: ns-resize;
-
-            --secondary-resizer-before-top: -5px;
-            --secondary-resizer-before-left: unset;
-            --secondary-resizer-after-right: unset;
-            --secondary-resizer-after-bottom: -5px;
+            --secondary-resizer-before-top: unset;
+            --secondary-resizer-before-left: -5px;
+            --secondary-resizer-after-right: -5px;
+            --secondary-resizer-after-bottom: unset;
         }
 
         .icon0 {
@@ -173,7 +165,7 @@
         body {
             margin: 0;
             display: flex;
-            flex-direction: row;
+            flex-direction: var(--main-direction);
             height: 100vh;
             background-color: var(--background-color);
             color: var(--text-color);
@@ -183,12 +175,12 @@
             transition: color 0.15s ease, background-color 0.15s ease;
         }
 
-        body.dragging-ew {
-            cursor: ew-resize !important;
+        body.dragging-main {
+            cursor: var(--main-resizer-cursor) !important;
         }
 
-        body.dragging-ns {
-            cursor: ns-resize !important;
+        body.dragging-secondary {
+            cursor: var(--secondary-resizer-cursor) !important;
         }
 
         #outline-pane {
@@ -202,9 +194,9 @@
 
         #main-resizer {
             position: relative;
-            width: 5px;
-            height: 100%;
-            cursor: ew-resize;
+            width: var(--main-resizer-width);
+            height: var(--main-resizer-height);
+            cursor: var(--main-resizer-cursor);
             background-color: var(--resizer-color);
         }
 
@@ -213,33 +205,33 @@
             /* Invisible extension width extended with before/after below */
             content: "";
             position: absolute;
-            height: 100%;
-            width: 5px;
-            cursor: ew-resize;
+            height: var(--main-resizer-extension-height);
+            width: var(--main-resizer-extension-width);
+            cursor: var(--main-resizer-cursor);
         }
 
         #main-resizer::before {
-            top: unset;
-            left: -5px;
+            top: var(--main-resizer-before-top);
+            left: var(--main-resizer-before-left)
         }
 
         #main-resizer::after {
-            right: -5px;
-            bottom: unset;
+            right: var(--main-resizer-after-right);
+            bottom: var(--main-resizer-after-bottom)
         }
 
         #outline-find-container {
             display: flex;
-            flex-direction: column;
-            height: 100%;
+            flex-direction: var(--secondary-direction);
+            height: var(--secondary-height);
             overflow: hidden;
         }
 
         #secondary-resizer {
             position: relative;
-            height: 5px;
-            width: 100%;
-            cursor: ns-resize;
+            height: var(--secondary-resizer-height);
+            width: var(--secondary-resizer-width);
+            cursor: var(--secondary-resizer-cursor);
             background-color: var(--resizer-color);
         }
 
@@ -247,17 +239,19 @@
         #secondary-resizer::after {
             content: "";
             position: absolute;
-            width: 100%;
-            height: 5px;
-            cursor: ns-resize;
+            width: var(--secondary-resizer-extension-width);
+            height: var(--secondary-resizer-extension-height);
+            cursor: var(--secondary-resizer-cursor);
         }
 
         #secondary-resizer::before {
-            top: -5px;
+            top: var(--secondary-resizer-before-top);
+            left: var(--secondary-resizer-before-left);
         }
 
         #secondary-resizer::after {
-            bottom: -5px;
+            bottom: var(--secondary-resizer-after-bottom);
+            right: var(--secondary-resizer-after-right);
         }
 
         #outline-pane,
@@ -337,6 +331,14 @@
             display: grid;
             grid-template-columns: 1em 1fr;
             align-items: start;
+        }
+
+        body.dragging-main .node {
+            cursor: var(--main-resizer-cursor);
+        }
+
+        body.dragging-secondary .node {
+            cursor: var(--secondary-resizer-cursor);
         }
 
         .caret {
@@ -662,7 +664,6 @@
         const minWidth = 0;
         const minHeight = 20;
 
-        // Constants
         const ROW_HEIGHT = 26;
         const LEFT_OFFSET = 16; // Padding from left edge
         const OUTLINE_CONTAINER = document.getElementById("outline-find-container");
@@ -1061,7 +1062,6 @@
             return rows;
         }
 
-
         function selectAndOrToggleAndRedraw(newSelectedNode = null, nodeToToggle = null) {
             // Handle toggling if requested
             if (nodeToToggle) {
@@ -1226,38 +1226,65 @@
         }
 
         function updateProportion() {
-            mainRatio = OUTLINE_CONTAINER.offsetWidth / window.innerWidth;
+            if (currentLayout === 'vertical') {
+                mainRatio = OUTLINE_CONTAINER.offsetWidth / window.innerWidth;
+            } else {
+                mainRatio = OUTLINE_CONTAINER.offsetHeight / window.innerHeight;
+            }
             throttledSaveMainRatio(mainRatio);
         }
 
         function updateOutlineContainerSize() {
-            let newWidth = window.innerWidth * mainRatio;
-            // Respect minimum width
-            if (newWidth < minWidth) {
-                newWidth = minWidth;
+            if (currentLayout === 'vertical') {
+                let newWidth = window.innerWidth * mainRatio;
+                // Respect minimum width
+                if (newWidth < minWidth) {
+                    newWidth = minWidth;
+                }
+                OUTLINE_CONTAINER.style.width = `${newWidth}px`;
+                OUTLINE_CONTAINER.style.height = `100%`;
+            } else {
+                let newHeight = window.innerHeight * mainRatio;
+                // Respect minimum height
+                if (newHeight < minWidth) {
+                    newHeight = minWidth;
+                }
+                OUTLINE_CONTAINER.style.height = `${newHeight}px`;
+                OUTLINE_CONTAINER.style.width = `100%`;
             }
-            OUTLINE_CONTAINER.style.width = `${newWidth}px`;
             renderTree();
         }
 
         const handleDrag = throttle(function (e) {
-            let clientX = e.clientX;
-            if (e.touches) {
-                clientX = e.touches[0].clientX;
-            }
-
-            const newWidth = clientX;
-            if (newWidth >= minWidth) {
-                OUTLINE_CONTAINER.style.width = newWidth + 'px';
+            if (currentLayout === 'vertical') {
+                let clientX = e.clientX;
+                if (e.touches) {
+                    clientX = e.touches[0].clientX;
+                }
+                const newWidth = clientX;
+                if (newWidth >= minWidth) {
+                    OUTLINE_CONTAINER.style.width = newWidth + 'px';
+                } else {
+                    OUTLINE_CONTAINER.style.width = minWidth + 'px';
+                }
             } else {
-                OUTLINE_CONTAINER.style.width = minWidth + 'px';
+                let clientY = e.clientY;
+                if (e.touches) {
+                    clientY = e.touches[0].clientY;
+                }
+                const newHeight = clientY;
+                if (newHeight >= minWidth) {
+                    OUTLINE_CONTAINER.style.height = newHeight + 'px';
+                } else {
+                    OUTLINE_CONTAINER.style.height = minWidth + 'px';
+                }
             }
             renderTree();
         }, 33);
 
         function startDrag(e) {
             isDragging = true;
-            document.body.classList.add('dragging-ew');
+            document.body.classList.add('dragging-main');
             e.preventDefault();
             document.addEventListener('mousemove', handleDrag);
             document.addEventListener('mouseup', stopDrag);
@@ -1268,7 +1295,7 @@
         function stopDrag() {
             if (isDragging) {
                 isDragging = false;
-                document.body.classList.remove('dragging-ew');
+                document.body.classList.remove('dragging-main');
                 document.removeEventListener('mousemove', handleDrag);
                 document.removeEventListener('mouseup', stopDrag);
                 document.removeEventListener('touchmove', handleDrag);
@@ -1290,50 +1317,89 @@
         }
 
         function updateSecondaryProportion() {
-            secondaryRatio = OUTLINE_PANE.offsetHeight / OUTLINE_CONTAINER.offsetHeight;
+            if (currentLayout === 'vertical') {
+                secondaryRatio = OUTLINE_PANE.offsetHeight / OUTLINE_CONTAINER.offsetHeight;
+            } else {
+                secondaryRatio = OUTLINE_PANE.offsetWidth / OUTLINE_CONTAINER.offsetWidth;
+            }
             throttledSaveSecondaryRatio(secondaryRatio);
         }
 
         function updateOutlinePaneSize() {
-            const containerHeight = OUTLINE_CONTAINER.offsetHeight;
-            let newHeight = containerHeight * secondaryRatio;
+            if (currentLayout === 'vertical') {
+                const containerHeight = OUTLINE_CONTAINER.offsetHeight;
+                let newHeight = containerHeight * secondaryRatio;
 
-            // Respect minimum heights
-            if (newHeight < minHeight) {
-                newHeight = minHeight;
-            } else if (newHeight > containerHeight - minHeight) {
-                newHeight = containerHeight - minHeight;
+                // Respect minimum heights
+                if (newHeight < minHeight) {
+                    newHeight = minHeight;
+                } else if (newHeight > containerHeight - minHeight) {
+                    newHeight = containerHeight - minHeight;
+                }
+
+                // Set flex properties to control the distribution
+                OUTLINE_PANE.style.flex = `0 0 ${newHeight}px`;
+                FIND_PANE.style.flex = `1 1 auto`; // Let it take the remaining space
+            } else {
+                const containerWidth = OUTLINE_CONTAINER.offsetWidth;
+                let newWidth = containerWidth * secondaryRatio;
+
+                // Respect minimum widths
+                if (newWidth < minHeight) {
+                    newWidth = minHeight;
+                } else if (newWidth > containerWidth - minHeight) {
+                    newWidth = containerWidth - minHeight;
+                }
+
+                // Set flex properties to control the distribution
+                OUTLINE_PANE.style.flex = `0 0 ${newWidth}px`;
+                FIND_PANE.style.flex = `1 1 auto`; // Let it take the remaining space
             }
-
-            // Set flex properties to control the distribution
-            OUTLINE_PANE.style.flex = `0 0 ${newHeight}px`;
-            FIND_PANE.style.flex = `1 1 auto`; // Let it take the remaining space
         }
 
         const handleSecondaryDrag = throttle(function (e) {
-            let clientY = e.clientY;
-            if (e.touches) {
-                clientY = e.touches[0].clientY;
+            if (currentLayout === 'vertical') {
+
+                let clientY = e.clientY;
+                if (e.touches) {
+                    clientY = e.touches[0].clientY;
+                }
+
+                // Get the top position of the outline-find-container
+                const containerRect = OUTLINE_CONTAINER.getBoundingClientRect();
+                const relativeY = clientY - containerRect.top;
+                const containerHeight = OUTLINE_CONTAINER.offsetHeight;
+
+                // Ensure we respect minimum heights
+                if (relativeY >= minHeight && relativeY <= containerHeight - minHeight) {
+                    // Set flex properties to control the distribution
+                    OUTLINE_PANE.style.flex = `0 0 ${relativeY}px`;
+                    FIND_PANE.style.flex = `1 1 auto`; // Let it take the remaining space
+                }
+            } else {
+                let clientX = e.clientX;
+                if (e.touches) {
+                    clientX = e.touches[0].clientX;
+                }
+
+                // Get the left position of the outline-find-container
+                const containerRect = OUTLINE_CONTAINER.getBoundingClientRect();
+                const relativeX = clientX - containerRect.left;
+                const containerWidth = OUTLINE_CONTAINER.offsetWidth;
+
+                // Ensure we respect minimum widths
+                if (relativeX >= minHeight && relativeX <= containerWidth - minHeight) {
+                    // Set flex properties to control the distribution
+                    OUTLINE_PANE.style.flex = `0 0 ${relativeX}px`;
+                    FIND_PANE.style.flex = `1 1 auto`; // Let it take the remaining space
+                }
             }
-
-            // Get the top position of the outline-find-container
-            const containerRect = OUTLINE_CONTAINER.getBoundingClientRect();
-            const relativeY = clientY - containerRect.top;
-            const containerHeight = OUTLINE_CONTAINER.offsetHeight;
-
-            // Ensure we respect minimum heights
-            if (relativeY >= minHeight && relativeY <= containerHeight - minHeight) {
-                // Set flex properties to control the distribution
-                OUTLINE_PANE.style.flex = `0 0 ${relativeY}px`;
-                FIND_PANE.style.flex = `1 1 auto`; // Let it take the remaining space
-            }
-
             renderTree();
         }, 33);
 
         function startSecondaryDrag(e) {
             secondaryIsDragging = true;
-            document.body.classList.add('dragging-ns');
+            document.body.classList.add('dragging-secondary');
             e.preventDefault();
             document.addEventListener('mousemove', handleSecondaryDrag);
             document.addEventListener('mouseup', stopSecondaryDrag);
@@ -1344,7 +1410,7 @@
         function stopSecondaryDrag() {
             if (secondaryIsDragging) {
                 secondaryIsDragging = false;
-                document.body.classList.remove('dragging-ns');
+                document.body.classList.remove('dragging-secondary');
                 document.removeEventListener('mousemove', handleSecondaryDrag);
                 document.removeEventListener('mouseup', stopSecondaryDrag);
                 document.removeEventListener('touchmove', handleSecondaryDrag);
@@ -1382,9 +1448,6 @@
 
         const applyLayout = (layout) => {
             currentLayout = layout;
-
-            console.log(`TODO: (in 'applyLayout') Switching to ${layout} layout`);
-
             localStorage.setItem('layout', layout);
             LAYOUT_TOGGLE.title = layout === 'vertical' ? 'Switch to horizontal layout' : 'Switch to vertical layout';
             if (layout === 'horizontal') {
