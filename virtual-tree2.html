@@ -931,7 +931,7 @@
             selectAndOrToggleAndRedraw(node);
         };
 
-        function goToLastSiblingOrVisNext() {
+        function gotoLastSiblingOrVisNext() {
             // Select the last sibling of the presently selected node, or the next visible node if already last.
             let node = selectedNode;
             if (hasNext(node)) {
@@ -954,9 +954,9 @@
             }
         };
 
-        function goToLastVisibleNode() {
+        function gotoLastVisibleNode() {
             // Select the last visible node in the outline.
-            let node = selectedNode
+            let node = selectedNode;
             while (node) {
                 const next = moveToVisNext(node);
                 if (next && isVisible(next)) {
@@ -1040,7 +1040,7 @@
             flatRows = flattenTree(tree); // Todo: When hoist is implemented, if hoisted, dont start with 'tree'. // Start up, so not hoisted. Safe to start with 'tree'.
             renderTree();
 
-            // Update body pane if selection changed
+            // Update body pane if selection changed (selectedNode cannot be null here because of isNew check)
             if (isNew) {
                 if (newSelectedNode && data[newSelectedNode.gnx]) {
                     BODY_PANE.textContent = data[newSelectedNode.gnx].bodyString || "";
@@ -1443,9 +1443,9 @@
             'ArrowLeft': () => contractNodeOrGoToParent(),
             'ArrowRight': () => expandNodeAndGoToFirstChild(),
             'PageUp': () => gotoFirstSiblingOrParent(),
-            'PageDown': () => goToLastSiblingOrVisNext(),
+            'PageDown': () => gotoLastSiblingOrVisNext(),
             'Home': () => gotoFirstVisibleNode(),
-            'End': () => goToLastVisibleNode()
+            'End': () => gotoLastVisibleNode()
         };
 
         function handleOutlinePaneKeyDown(e) {
