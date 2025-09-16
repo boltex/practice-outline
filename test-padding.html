@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Padding + Overflow Demo</title>
+    <style>
+        .scroll-box {
+            width: 200px;
+            height: 100px;
+            padding: 20px;
+            border: 2px solid black;
+            overflow: auto;
+            font-family: sans-serif;
+            background: #f8f8f8;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="scroll-box">
+        <p>
+            This box has <strong>20px padding</strong>.
+            Notice how the text starts *inside* that padding and doesn’t overlap the border.
+            If the content is longer, scrollbars appear — the padding doesn’t block it.
+        </p>
+        <p>
+            Keep scrolling down...
+            Padding simply creates space around the content,
+            it never hides or clips it by itself.
+        </p>
+        <p>
+            See? You can still read all this text just fine!
+        </p>
+    </div>
+</body>
+
+</html>

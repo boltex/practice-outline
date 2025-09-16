@@ -435,7 +435,6 @@
             line-height: 1;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
             z-index: 1000;
-            transition: transform 0.2s ease;
             overflow: hidden;
         }
 
@@ -447,10 +446,6 @@
             position: relative;
             top: 0;
             transition: transform 0.3s ease;
-        }
-
-        #layout-toggle:active #layout-icon {
-            transform: rotate(90deg);
         }
     </style>
 </head>
@@ -637,7 +632,13 @@
         const LAYOUT_ICON = document.getElementById('layout-icon');
         const HTML_ELEMENT = document.documentElement;
 
-        // Navigation helpers
+        // Select first node in the hidden root initially
+        if (tree.children && tree.children.length > 0) {
+            selectedNode = tree.children[0];
+        }
+        let flatRows = flattenTree(tree); // Start up, so not hoisted. Safe to start with 'tree'.
+
+        // -------------------------------------- Navigation helpers
         function children(node) {
             // Given a node, return an array of its children
             return [...node.children] || [];
@@ -864,7 +865,7 @@
             }
         };
 
-        // Navigation actions
+        // -------------------------------------- Navigation actions
         function expandNodeAndGoToFirstChild() {
             // If the presently selected node has children, expand it if needed and go to the first child.
             let node = selectedNode;
@@ -985,13 +986,7 @@
             }
         }
 
-        // Select first node in the hidden root initially
-        if (tree.children && tree.children.length > 0) {
-            selectedNode = tree.children[0];
-        }
-        let flatRows = flattenTree(tree);
-
-        // Flatten tree into visible rows
+        // -------------------------------------- Rendering helpers
         function flattenTree(node, depth = 0, isRoot = true) {
             let rows = [];
 
@@ -1022,7 +1017,7 @@
             return rows;
         }
 
-        // Selects and/or toggles a node
+
         function selectAndOrToggleAndRedraw(newSelectedNode = null, nodeToToggle = null) {
             // Handle toggling if requested
             if (nodeToToggle) {
@@ -1042,7 +1037,7 @@
             }
 
             // Only rebuild and redraw once
-            flatRows = flattenTree(tree);
+            flatRows = flattenTree(tree); // Todo: When hoist is implemented, if hoisted, dont start with 'tree'. // Start up, so not hoisted. Safe to start with 'tree'.
             renderTree();
 
             // Update body pane if selection changed
@@ -1073,7 +1068,6 @@
             }
         }
 
-        // Render Utilities
         function throttle(func, limit) {
             let lastCall = 0;
             let timeout;
@@ -1095,8 +1089,8 @@
             };
         }
 
-        // Render visible rows only
         function renderTree() {
+            // Render visible rows only
             const scrollTop = OUTLINE_PANE.scrollTop;
             const viewportHeight = OUTLINE_PANE.clientHeight;
             const viewportWidth = OUTLINE_PANE.clientWidth;
@@ -1305,22 +1299,93 @@
             updateOutlinePaneSize();
         }
 
-        // Initialize resizer
-        VERTICAL_RESIZER.addEventListener('mousedown', startDrag);
-        VERTICAL_RESIZER.addEventListener('touchstart', startDrag);
-        HORIZONTAL_RESIZER.addEventListener('mousedown', startSecondaryDrag);
-        HORIZONTAL_RESIZER.addEventListener('touchstart', startSecondaryDrag);
-        window.addEventListener('resize', throttle(() => {
+        const getCurrentTheme = () => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                return savedTheme;
+            }
+            // Use OS preference as fallback
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        };
+
+        const getCurrentLayout = () => {
+            return localStorage.getItem('layout') || 'vertical';
+        };
+
+        const applyTheme = (theme) => {
+            currentTheme = theme;
+            HTML_ELEMENT.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            THEME_TOGGLE.title = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
+            THEME_ICON.innerHTML = theme === 'dark' ? '🌙' : '☀️';
+        };
+
+        const applyLayout = (layout) => {
+            currentLayout = layout;
+
+            console.log(`TODO: (in 'applyLayout') Switching to ${layout} layout`);
+
+            localStorage.setItem('layout', layout);
+            LAYOUT_TOGGLE.title = layout === 'vertical' ? 'Switch to horizontal layout' : 'Switch to vertical layout';
+            if (layout === 'horizontal') {
+                LAYOUT_ICON.style.transform = 'rotate(90deg)';
+            } else {
+                LAYOUT_ICON.style.transform = 'rotate(0deg)';
+            }
+            // Proportions will have changed so we must update sizes
             updatePanelSizes();
             renderTree();
-        }, 67));
+        };
 
-        // Prevent text selection on double-click
-        OUTLINE_PANE.addEventListener("mousedown", e => {
+        // Setup and organize all event handlers
+        function setupEventHandlers() {
+            setupOutlinePaneHandlers();
+            setupBodyPaneHandlers();
+            setupResizerHandlers();
+            setupWindowHandlers();
+            setupToggleHandlers();
+        }
+
+        function setupOutlinePaneHandlers() {
+            // Prevent text selection on double-click
+            OUTLINE_PANE.addEventListener("mousedown", handleOutlinePaneMouseDown);
+            OUTLINE_PANE.addEventListener('click', handleOutlinePaneClick);
+            OUTLINE_PANE.addEventListener('dblclick', handleOutlinePaneDblClick);
+            OUTLINE_PANE.addEventListener('keydown', handleOutlinePaneKeyDown);
+            OUTLINE_PANE.addEventListener("scroll", throttle(renderTree, 33));
+        }
+
+        function setupBodyPaneHandlers() {
+            BODY_PANE.addEventListener('keydown', handleBodyPaneKeyDown);
+
+            // Block all text changes
+            BODY_PANE.addEventListener("beforeinput", preventDefault);
+            BODY_PANE.addEventListener("paste", preventDefault);
+        }
+
+        function setupResizerHandlers() {
+            VERTICAL_RESIZER.addEventListener('mousedown', startDrag);
+            VERTICAL_RESIZER.addEventListener('touchstart', startDrag);
+            HORIZONTAL_RESIZER.addEventListener('mousedown', startSecondaryDrag);
+            HORIZONTAL_RESIZER.addEventListener('touchstart', startSecondaryDrag);
+        }
+
+        function setupWindowHandlers() {
+            window.addEventListener('resize', throttle(handleWindowResize, 67));
+            window.addEventListener('keydown', handleGlobalKeyDown);
+        }
+
+        function setupToggleHandlers() {
+            THEME_TOGGLE.addEventListener('click', handleThemeToggleClick);
+            LAYOUT_TOGGLE.addEventListener('click', handleLayoutToggleClick);
+        }
+
+        // Event handler implementations
+        function handleOutlinePaneMouseDown(e) {
             if (e.detail === 2) e.preventDefault();
-        });
+        }
 
-        OUTLINE_PANE.addEventListener('click', (event) => {
+        function handleOutlinePaneClick(event) {
             const nodeEl = event.target.closest('.node');
             if (!nodeEl) return;
 
@@ -1344,9 +1409,9 @@
                     selectAndOrToggleAndRedraw(row.node); // Just selection
                 }
             }
-        });
+        }
 
-        OUTLINE_PANE.addEventListener('dblclick', (event) => {
+        function handleOutlinePaneDblClick(event) {
             if (event.target.classList.contains('node-text')) {
                 event.preventDefault();
                 event.stopPropagation();
@@ -1366,73 +1431,61 @@
                     }
                 }
             }
-        });
+        }
 
-        OUTLINE_PANE.addEventListener('keydown', (e) => {
-            if ((e.key === 'Enter' || e.key === 'Tab') && !e.ctrlKey && !e.altKey && !e.metaKey) {
-                e.preventDefault();
-                BODY_PANE.focus();
-            } else if (e.key === ' ') {
-                e.preventDefault();
-                toggleSelected();
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                selectVisBack();
-            } else if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                selectVisNext();
-            } else if (e.key === 'ArrowLeft') {
-                e.preventDefault();
-                contractNodeOrGoToParent();
-            } else if (e.key === 'ArrowRight') {
-                e.preventDefault();
-                expandNodeAndGoToFirstChild();
-            } else if (e.key === 'PageUp') {
-                e.preventDefault();
-                gotoFirstSiblingOrParent();
-            } else if (e.key === 'PageDown') {
-                e.preventDefault();
-                goToLastSiblingOrVisNext();
-            } else if (e.key === 'Home') {
-                e.preventDefault();
-                gotoFirstVisibleNode();
-            } else if (e.key === 'End') {
-                e.preventDefault();
-                goToLastVisibleNode();
-            } else if (e.key === '-' && e.altKey && !e.ctrlKey && !e.metaKey) {
+        // Outline pane key mapping for better organization
+        const outlinePaneKeyMap = {
+            'Enter': () => BODY_PANE.focus(),
+            'Tab': () => BODY_PANE.focus(),
+            ' ': () => toggleSelected(),
+            'ArrowUp': () => selectVisBack(),
+            'ArrowDown': () => selectVisNext(),
+            'ArrowLeft': () => contractNodeOrGoToParent(),
+            'ArrowRight': () => expandNodeAndGoToFirstChild(),
+            'PageUp': () => gotoFirstSiblingOrParent(),
+            'PageDown': () => goToLastSiblingOrVisNext(),
+            'Home': () => gotoFirstVisibleNode(),
+            'End': () => goToLastVisibleNode()
+        };
+
+        function handleOutlinePaneKeyDown(e) {
+            // Special case for Alt key combinations
+            if (e.key === '-' && e.altKey && !e.ctrlKey && !e.metaKey) {
                 e.preventDefault();
                 collapseAll();
+                return;
             }
-        });
 
-        BODY_PANE.addEventListener('keydown', (e) => {
-            if (e.key === 'Tab' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+            const handler = outlinePaneKeyMap[e.key];
+            if (handler && !e.ctrlKey && !e.altKey && !e.metaKey) {
                 e.preventDefault();
-                OUTLINE_PANE.focus();
-            } else if (e.key === 'ArrowUp' && e.altKey && !e.ctrlKey && !e.metaKey) {
-                e.preventDefault();
-                OUTLINE_PANE.focus();
-                selectVisBack();
-            } else if (e.key === 'ArrowDown' && e.altKey && !e.ctrlKey && !e.metaKey) {
-                e.preventDefault();
-                OUTLINE_PANE.focus();
-                selectVisNext();
-            } else if (e.key === 'ArrowLeft' && e.altKey && !e.ctrlKey && !e.metaKey) {
-                e.preventDefault();
-                OUTLINE_PANE.focus();
-                contractNodeOrGoToParent();
-            } else if (e.key === 'ArrowRight' && e.altKey && !e.ctrlKey && !e.metaKey) {
-                e.preventDefault();
-                OUTLINE_PANE.focus();
-                expandNodeAndGoToFirstChild();
+                handler();
             }
-        });
+        }
 
-        // Listen to ctrl+F (find) and ctrl+M (toggle mark) from anywhere
-        window.addEventListener('keydown', (e) => {
+        // Body pane key mapping
+        const bodyPaneKeyMap = {
+            'Tab': (e) => { e.preventDefault(); OUTLINE_PANE.focus(); },
+            'ArrowUp': (e) => { if (e.altKey) { e.preventDefault(); OUTLINE_PANE.focus(); selectVisBack(); } },
+            'ArrowDown': (e) => { if (e.altKey) { e.preventDefault(); OUTLINE_PANE.focus(); selectVisNext(); } },
+            'ArrowLeft': (e) => { if (e.altKey) { e.preventDefault(); OUTLINE_PANE.focus(); contractNodeOrGoToParent(); } },
+            'ArrowRight': (e) => { if (e.altKey) { e.preventDefault(); OUTLINE_PANE.focus(); expandNodeAndGoToFirstChild(); } }
+        };
+
+        function handleBodyPaneKeyDown(e) {
+            const handler = bodyPaneKeyMap[e.key];
+            if (handler) {
+                // arrows are allowed to move cursor in body pane if no alt key:
+                // so do not preventDefault in that case. Only do so if alt key is pressed.
+                handler(e);
+            }
+        }
+
+        // Global key handlers (work anywhere)
+        function handleGlobalKeyDown(e) {
             if (e.key.toLowerCase() === 'f' && e.ctrlKey && !e.altKey && !e.metaKey) {
                 e.preventDefault();
-                OUTLINE_PANE.focus();
+                FIND_PANE.focus();
             } else if (e.key.toLowerCase() === 'm' && e.ctrlKey && !e.altKey && !e.metaKey) {
                 e.preventDefault();
                 if (selectedNode && selectedNode.gnx) {
@@ -1440,96 +1493,53 @@
                     renderTree(); // Re-render to update icons
                 }
             }
-        });
+        }
 
-        // Scroll handler
-        OUTLINE_PANE.addEventListener("scroll", throttle(renderTree, 33));
-
-        const getCurrentTheme = () => {
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme) {
-                return savedTheme;
-            }
-            // Use OS preference as fallback
-            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        };
-
-        const applyTheme = (theme) => {
-            currentTheme = theme;
-            HTML_ELEMENT.setAttribute('data-theme', theme);
-            localStorage.setItem('theme', theme);
-            THEME_TOGGLE.title = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
-            THEME_ICON.innerHTML = theme === 'dark' ? '🌙' : '☀️';
-        };
-
-        applyTheme(getCurrentTheme());
-
-        THEME_TOGGLE.addEventListener('click', () => {
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            applyTheme(newTheme);
-            renderTree(); // Re-render to update icons
-        });
-
-        const applyLayout = (layout) => {
-            currentLayout = layout;
-
-            console.log(`TODO: (in 'applyLayout') Switching to ${layout} layout`);
-
-            localStorage.setItem('layout', layout);
-            LAYOUT_TOGGLE.title = layout === 'vertical' ? 'Switch to horizontal layout' : 'Switch to vertical layout';
-            if (layout === 'horizontal') {
-                LAYOUT_ICON.style.transform = 'rotate(90deg)';
-            } else {
-                LAYOUT_ICON.style.transform = 'rotate(0deg)';
-            }
-            // Proportions will have changed so we must update sizes
+        function handleWindowResize() {
             updatePanelSizes();
             renderTree();
-        };
+        }
 
-        LAYOUT_TOGGLE.addEventListener('click', () => {
+        function handleDOMContentLoaded() {
+            applyLayout(getCurrentLayout());
+            applyTheme(getCurrentTheme());
+            initializeLayout();
+        }
+
+        function handleThemeToggleClick() {
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            applyTheme(newTheme);
+        }
+
+        function handleLayoutToggleClick() {
             const newLayout = currentLayout === 'vertical' ? 'horizontal' : 'vertical';
             applyLayout(newLayout);
-        });
+        }
 
-        const getCurrentLayout = () => {
-            return localStorage.getItem('layout') || 'vertical';
-        };
+        // Utility functions
+        function preventDefault(e) {
+            e.preventDefault();
+        }
 
+        // Modified initialization function to call the setup
         function initializeLayout() {
-            // Block all text changes (typing, delete, paste, etc.)
-            BODY_PANE.addEventListener("beforeinput", (e) => {
-                e.preventDefault();
-            });
-
-            // Extra safety: block right-click "Paste"
-            BODY_PANE.addEventListener("paste", (e) => {
-                e.preventDefault();
-            });
-
             const savedOutlineBodyRatio = getSavedMainRatio();
             const savedOutlineFindRatio = getSavedSecondaryRatio();
 
             if (savedOutlineBodyRatio !== null) {
                 mainRatio = savedOutlineBodyRatio;
-                console.log(`Restored saved outline proportion: ${mainRatio}`);
             }
             if (savedOutlineFindRatio !== null) {
                 secondaryRatio = savedOutlineFindRatio;
-                console.log(`Restored saved outline-find proportion: ${secondaryRatio}`);
             }
 
             updatePanelSizes();
-
-            // Initial render
+            setupEventHandlers();
             renderTree();
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
-            applyLayout(getCurrentLayout());
-            applyTheme(getCurrentTheme());
-            initializeLayout();
-        });
+        window.addEventListener('DOMContentLoaded', handleDOMContentLoaded);
+
     </script>
 </body>
 
