@@ -227,18 +227,15 @@
             bottom: -5px;
         }
 
-        /* Ensure outline-pane and find-pane can grow/shrink appropriately */
         #outline-pane,
         #find-pane {
             overflow-y: auto;
             flex: 1 1 0;
         }
 
-        /* The find-pane initially can be smaller */
         #find-pane {
-            /* flex: 0.5 1 0;
-            min-height: 20px; */
             background-color: var(--find-pane-color);
+            transition: color 0.15s ease, background-color 0.15s ease;
         }
 
         #body-pane {
@@ -570,21 +567,22 @@
         let visitedNodes = {}; // Keys are gnx, values are node references
         // Build clones when repeated in the tree
         function buildClones(node) {
-            if (node.gnx && !data[node.gnx].icon) {
-                data[node.gnx].icon = 0;
+            const gnx = node && node.gnx;
+            // Initialize data entry safely if it exists
+            if (gnx != null && data[gnx]) {
+                if (!('icon' in data[gnx])) data[gnx].icon = 0;
             }
-            // If we've already seen this node, fill its children with JSON stringify/parse for deep copy.
-            if (visitedNodes[node.gnx]) {
-                node.children = JSON.parse(JSON.stringify(visitedNodes[node.gnx].children));
-                data[node.gnx].icon += 4; // It's a clone!
+
+            if (gnx != null && Object.prototype.hasOwnProperty.call(visitedNodes, gnx)) {
+                // If we've already seen this node, fill its children with JSON stringify/parse for deep copy.
+                node.children = JSON.parse(JSON.stringify(visitedNodes[gnx].children || []));
+                if (data[gnx]) data[gnx].icon = (data[gnx].icon || 0) | 4; // set clone bit
                 // Do not recurse into children, they are already built
             } else {
-                // Even whitespace is considered body
-                if (node.gnx && data[node.gnx].bodyString) {
-                    data[node.gnx].icon += 1; // hasBody
+                if (gnx != null && data[gnx] && data[gnx].bodyString) {
+                    data[gnx].icon = (data[gnx].icon || 0) | 1; // set hasBody bit
                 }
-                visitedNodes[node.gnx] = node;
-                // Recur for children
+                visitedNodes[gnx] = node;
                 if (node.children) {
                     for (const child of node.children) {
                         buildClones(child);
@@ -640,8 +638,8 @@
 
         // -------------------------------------- Navigation helpers
         function children(node) {
-            // Given a node, return an array of its children
-            return [...node.children] || [];
+            // Given a node, return a shallow copy of its children array or an empty array.
+            return node && node.children ? node.children.slice() : [];
         }
 
         function childIndex(node) {
@@ -1005,7 +1003,6 @@
                 node.toggled = false; // Reset because it should not persist
             }
 
-            // If expanded and has children, process them
             if (isExpanded(node) && node.children) {
                 for (const child of node.children) {
                     // Root node's children appear at depth 0
@@ -1154,15 +1151,31 @@
             }
         }
 
+        function safeLocalStorageGet(key) {
+            try {
+                return localStorage.getItem(key);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function safeLocalStorageSet(key, value) {
+            try {
+                localStorage.setItem(key, value);
+            } catch (e) {
+                // ignore
+            }
+        }
+
         function saveMainRatio(proportion) {
-            localStorage.setItem('mainRatio', proportion);
+            safeLocalStorageSet('mainRatio', proportion);
         }
 
         const throttledSaveMainRatio = throttle(saveMainRatio, 500);
 
         function getSavedMainRatio() {
-            const saved = localStorage.getItem('mainRatio');
-            return saved ? parseFloat(saved) : mainRatio; // Use the variable's default value
+            const saved = safeLocalStorageGet('mainRatio');
+            return saved != null ? parseFloat(saved) : null;
         }
 
         function updateProportion() {
@@ -1219,14 +1232,14 @@
         }
 
         function saveSecondaryRatio(proportion) {
-            localStorage.setItem('secondaryRatio', proportion);
+            safeLocalStorageSet('secondaryRatio', proportion);
         }
 
         const throttledSaveSecondaryRatio = throttle(saveSecondaryRatio, 500);
 
         function getSavedSecondaryRatio() {
-            const saved = localStorage.getItem('secondaryRatio');
-            return saved ? parseFloat(saved) : secondaryRatio; // Use the variable's default value
+            const saved = safeLocalStorageGet('secondaryRatio');
+            return saved != null ? parseFloat(saved) : null;
         }
 
         function updateSecondaryProportion() {
@@ -1300,7 +1313,7 @@
         }
 
         const getCurrentTheme = () => {
-            const savedTheme = localStorage.getItem('theme');
+            const savedTheme = safeLocalStorageGet('theme');
             if (savedTheme) {
                 return savedTheme;
             }
@@ -1315,7 +1328,7 @@
         const applyTheme = (theme) => {
             currentTheme = theme;
             HTML_ELEMENT.setAttribute('data-theme', theme);
-            localStorage.setItem('theme', theme);
+            safeLocalStorageSet('theme', theme);
             THEME_TOGGLE.title = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
             THEME_ICON.innerHTML = theme === 'dark' ? '🌙' : '☀️';
         };
@@ -1489,7 +1502,7 @@
             } else if (e.key.toLowerCase() === 'm' && e.ctrlKey && !e.altKey && !e.metaKey) {
                 e.preventDefault();
                 if (selectedNode && selectedNode.gnx) {
-                    data[selectedNode.gnx].icon ^= 2; // Toggle mark bit
+                    data[selectedNode.gnx].icon ^= 2; // Toggle mark bit (selectedNode will never be the hidden root node)
                     renderTree(); // Re-render to update icons
                 }
             }
@@ -1509,6 +1522,7 @@
         function handleThemeToggleClick() {
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             applyTheme(newTheme);
+            renderTree(); // Re-render to update icon colors
         }
 
         function handleLayoutToggleClick() {
@@ -1526,10 +1540,10 @@
             const savedOutlineBodyRatio = getSavedMainRatio();
             const savedOutlineFindRatio = getSavedSecondaryRatio();
 
-            if (savedOutlineBodyRatio !== null) {
+            if (savedOutlineBodyRatio != null) {
                 mainRatio = savedOutlineBodyRatio;
             }
-            if (savedOutlineFindRatio !== null) {
+            if (savedOutlineFindRatio != null) {
                 secondaryRatio = savedOutlineFindRatio;
             }
 
