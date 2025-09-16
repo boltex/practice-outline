@@ -666,7 +666,7 @@
 
         const ROW_HEIGHT = 26;
         const LEFT_OFFSET = 16; // Padding from left edge
-        const OUTLINE_CONTAINER = document.getElementById("outline-find-container");
+        const OUTLINE_FIND_CONTAINER = document.getElementById("outline-find-container");
         const OUTLINE_PANE = document.getElementById("outline-pane");
         const BODY_PANE = document.getElementById("body-pane");
         const VERTICAL_RESIZER = document.getElementById('main-resizer');
@@ -1227,9 +1227,9 @@
 
         function updateProportion() {
             if (currentLayout === 'vertical') {
-                mainRatio = OUTLINE_CONTAINER.offsetWidth / window.innerWidth;
+                mainRatio = OUTLINE_FIND_CONTAINER.offsetWidth / window.innerWidth;
             } else {
-                mainRatio = OUTLINE_CONTAINER.offsetHeight / window.innerHeight;
+                mainRatio = OUTLINE_FIND_CONTAINER.offsetHeight / window.innerHeight;
             }
             throttledSaveMainRatio(mainRatio);
         }
@@ -1241,16 +1241,16 @@
                 if (newWidth < minWidth) {
                     newWidth = minWidth;
                 }
-                OUTLINE_CONTAINER.style.width = `${newWidth}px`;
-                OUTLINE_CONTAINER.style.height = `100%`;
+                OUTLINE_FIND_CONTAINER.style.width = `${newWidth}px`;
+                OUTLINE_FIND_CONTAINER.style.height = `100%`;
             } else {
                 let newHeight = window.innerHeight * mainRatio;
                 // Respect minimum height
                 if (newHeight < minWidth) {
                     newHeight = minWidth;
                 }
-                OUTLINE_CONTAINER.style.height = `${newHeight}px`;
-                OUTLINE_CONTAINER.style.width = `100%`;
+                OUTLINE_FIND_CONTAINER.style.height = `${newHeight}px`;
+                OUTLINE_FIND_CONTAINER.style.width = `100%`;
             }
             renderTree();
         }
@@ -1263,9 +1263,9 @@
                 }
                 const newWidth = clientX;
                 if (newWidth >= minWidth) {
-                    OUTLINE_CONTAINER.style.width = newWidth + 'px';
+                    OUTLINE_FIND_CONTAINER.style.width = newWidth + 'px';
                 } else {
-                    OUTLINE_CONTAINER.style.width = minWidth + 'px';
+                    OUTLINE_FIND_CONTAINER.style.width = minWidth + 'px';
                 }
             } else {
                 let clientY = e.clientY;
@@ -1274,9 +1274,9 @@
                 }
                 const newHeight = clientY;
                 if (newHeight >= minWidth) {
-                    OUTLINE_CONTAINER.style.height = newHeight + 'px';
+                    OUTLINE_FIND_CONTAINER.style.height = newHeight + 'px';
                 } else {
-                    OUTLINE_CONTAINER.style.height = minWidth + 'px';
+                    OUTLINE_FIND_CONTAINER.style.height = minWidth + 'px';
                 }
             }
             renderTree();
@@ -1318,16 +1318,16 @@
 
         function updateSecondaryProportion() {
             if (currentLayout === 'vertical') {
-                secondaryRatio = OUTLINE_PANE.offsetHeight / OUTLINE_CONTAINER.offsetHeight;
+                secondaryRatio = OUTLINE_PANE.offsetHeight / OUTLINE_FIND_CONTAINER.offsetHeight;
             } else {
-                secondaryRatio = OUTLINE_PANE.offsetWidth / OUTLINE_CONTAINER.offsetWidth;
+                secondaryRatio = OUTLINE_PANE.offsetWidth / OUTLINE_FIND_CONTAINER.offsetWidth;
             }
             throttledSaveSecondaryRatio(secondaryRatio);
         }
 
         function updateOutlinePaneSize() {
             if (currentLayout === 'vertical') {
-                const containerHeight = OUTLINE_CONTAINER.offsetHeight;
+                const containerHeight = OUTLINE_FIND_CONTAINER.offsetHeight;
                 let newHeight = containerHeight * secondaryRatio;
 
                 // Respect minimum heights
@@ -1341,7 +1341,7 @@
                 OUTLINE_PANE.style.flex = `0 0 ${newHeight}px`;
                 FIND_PANE.style.flex = `1 1 auto`; // Let it take the remaining space
             } else {
-                const containerWidth = OUTLINE_CONTAINER.offsetWidth;
+                const containerWidth = OUTLINE_FIND_CONTAINER.offsetWidth;
                 let newWidth = containerWidth * secondaryRatio;
 
                 // Respect minimum widths
@@ -1366,9 +1366,9 @@
                 }
 
                 // Get the top position of the outline-find-container
-                const containerRect = OUTLINE_CONTAINER.getBoundingClientRect();
+                const containerRect = OUTLINE_FIND_CONTAINER.getBoundingClientRect();
                 const relativeY = clientY - containerRect.top;
-                const containerHeight = OUTLINE_CONTAINER.offsetHeight;
+                const containerHeight = OUTLINE_FIND_CONTAINER.offsetHeight;
 
                 // Ensure we respect minimum heights
                 if (relativeY >= minHeight && relativeY <= containerHeight - minHeight) {
@@ -1383,9 +1383,9 @@
                 }
 
                 // Get the left position of the outline-find-container
-                const containerRect = OUTLINE_CONTAINER.getBoundingClientRect();
+                const containerRect = OUTLINE_FIND_CONTAINER.getBoundingClientRect();
                 const relativeX = clientX - containerRect.left;
-                const containerWidth = OUTLINE_CONTAINER.offsetWidth;
+                const containerWidth = OUTLINE_FIND_CONTAINER.offsetWidth;
 
                 // Ensure we respect minimum widths
                 if (relativeX >= minHeight && relativeX <= containerWidth - minHeight) {
