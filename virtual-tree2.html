@@ -140,14 +140,15 @@
 
         body {
             margin: 0;
-
             display: flex;
             flex-direction: row;
-
             height: 100vh;
-            transition: color 0.15s ease, background-color 0.15s ease;
             background-color: var(--background-color);
             color: var(--text-color);
+        }
+
+        [data-transition="true"] body {
+            transition: color 0.15s ease, background-color 0.15s ease;
         }
 
         body.dragging-ew {
@@ -235,6 +236,9 @@
 
         #find-pane {
             background-color: var(--find-pane-color);
+        }
+
+        [data-transition="true"] #find-pane {
             transition: color 0.15s ease, background-color 0.15s ease;
         }
 
@@ -242,10 +246,13 @@
             flex: 1;
             padding: 1rem 0 0 1rem;
             background-color: var(--body-pane-color);
-            transition: color 0.3s ease, background-color 0.3s ease;
             overflow-y: auto;
             font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
             white-space: pre-wrap;
+        }
+
+        [data-transition="true"] #body-pane {
+            transition: color 0.3s ease, background-color 0.3s ease;
         }
 
         #outline-pane:focus,
@@ -1520,6 +1527,8 @@
         }
 
         function handleThemeToggleClick() {
+            // Only animate once button pressed, so page-load wont animate color changes.
+            HTML_ELEMENT.setAttribute('data-transition', 'true');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             applyTheme(newTheme);
             renderTree(); // Re-render to update icon colors
