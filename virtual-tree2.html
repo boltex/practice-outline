@@ -70,8 +70,40 @@
 
         [data-layout="horizontal"] {
             /*  horizontal layout */
-            --main-direction: column;
-            /* TODO : ...rest of the variables */
+            /* body contains both outline-find-container, main splitter and body-pane */
+            --main-direction: row;
+
+            --main-resizer-width: 5px;
+            --main-resizer-height: 100%;
+
+            --main-resizer-cursor: ew-resize;
+
+            --main-resizer-extension-width: 5px;
+            --main-resizer-extension-height: 100%;
+            --main-resizer-extension-cursor: ew-resize;
+
+            --main-resizer-before-top: unset;
+            --main-resizer-before-left: -5px;
+            --main-resizer-after-right: -5px;
+            --main-resizer-after-bottom: unset;
+
+            /* outline-find-container contains outline-pane, secondary splitter and find-pane */
+            --secondary-direction: column;
+            --secondary-height: 100%;
+
+            --secondary-resizer-width: 100%;
+            --secondary-resizer-height: 5px;
+
+            --secondary-resizer-cursor: ns-resize;
+
+            --secondary-resizer-extension-width: 100%;
+            --secondary-resizer-extension-height: 5px;
+            --secondary-resizer-extension-cursor: ns-resize;
+
+            --secondary-resizer-before-top: -5px;
+            --secondary-resizer-before-left: unset;
+            --secondary-resizer-after-right: unset;
+            --secondary-resizer-after-bottom: -5px;
         }
 
         .icon0 {
@@ -449,6 +481,14 @@
         #layout-icon {
             position: relative;
             top: 0;
+        }
+
+        /* vertical is default */
+        [data-layout="horizontal"] #layout-icon {
+            transform: rotate(90deg);
+        }
+
+        [data-transition="true"] #layout-icon {
             transition: transform 0.3s ease;
         }
     </style>
@@ -1348,9 +1388,9 @@
             localStorage.setItem('layout', layout);
             LAYOUT_TOGGLE.title = layout === 'vertical' ? 'Switch to horizontal layout' : 'Switch to vertical layout';
             if (layout === 'horizontal') {
-                LAYOUT_ICON.style.transform = 'rotate(90deg)';
+                HTML_ELEMENT.setAttribute('data-layout', 'horizontal');
             } else {
-                LAYOUT_ICON.style.transform = 'rotate(0deg)';
+                HTML_ELEMENT.setAttribute('data-layout', 'vertical');
             }
             // Proportions will have changed so we must update sizes
             updatePanelSizes();
@@ -1535,6 +1575,7 @@
         }
 
         function handleLayoutToggleClick() {
+            HTML_ELEMENT.setAttribute('data-transition', 'true');
             const newLayout = currentLayout === 'vertical' ? 'horizontal' : 'vertical';
             applyLayout(newLayout);
         }
