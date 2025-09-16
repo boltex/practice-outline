@@ -545,6 +545,64 @@
             height: 16px;
             margin: 0;
         }
+
+        #find-pane #find-input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 0.4rem 0.5rem;
+            margin: 0;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            background: transparent;
+            color: inherit;
+            font-family: sans-serif;
+        }
+
+        input[type="checkbox"] {
+            appearance: none;
+            /* hide default */
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ccc;
+            border-radius: 3px;
+            /* round corners if desired */
+            background-color: #222;
+            /* dark background for dark mode */
+            position: relative;
+        }
+
+        input[type="checkbox"]:checked::after {
+            content: "";
+            position: absolute;
+            left: 4px;
+            top: -5px;
+            width: 6px;
+            height: 12px;
+            border: solid #e0e0e0;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        input[type="radio"] {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ccc;
+            border-radius: 50%;
+            background-color: #222;
+            position: relative;
+        }
+
+        input[type="radio"]:checked::after {
+            content: "";
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 8px;
+            height: 8px;
+            background-color: #e0e0e0;
+            border-radius: 50%;
+        }
     </style>
 </head>
 
@@ -561,7 +619,8 @@
         <div id="find-pane">
 
             <div class="find-controls" role="region" aria-label="Find options">
-                <input id="find-input" type="text" placeholder="&lt;find pattern here&gt;" aria-label="Find pattern">
+                <input id="find-input" type="text" autocomplete="off" placeholder="&lt;find pattern here&gt;"
+                    aria-label="Find pattern">
                 <div class="find-col checkboxes" aria-hidden="false">
                     <label for="opt-whole">
                         <input id="opt-whole" type="checkbox" name="find-option" />
