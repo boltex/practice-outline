@@ -685,11 +685,6 @@
             return node.children && node.children.length > 0;
         }
 
-        function numberOfChildren(node) {
-            // Given a node, return the number of its children.
-            return node.children ? node.children.length : 0;
-        }
-
         function isExpanded(node) {
             // Given a node, return true if it is expanded.
             if (!node.parent) return true; // The root node is always considered expanded
@@ -921,28 +916,6 @@
                 selectAndOrToggleAndRedraw(node);
             }
         }
-
-        function goToFirstSibling() {
-            // Select the first sibling of the presently selected node.
-            let node = selectedNode;
-            if (hasBack(node)) {
-                while (hasBack(node)) {
-                    node = moveToBack(node);
-                }
-            }
-            selectAndOrToggleAndRedraw(node);
-        };
-
-        function goToLastSibling() {
-            // Select the last sibling of the presently selected node.
-            let node = selectedNode;
-            if (hasNext(node)) {
-                while (hasNext(node)) {
-                    node = moveToNext(node);
-                }
-            }
-            selectAndOrToggleAndRedraw(node);
-        };
 
         function gotoFirstSiblingOrParent() {
             // Select the first sibling of the presently selected node, or its parent if already first.
@@ -1497,11 +1470,6 @@
             applyTheme(newTheme);
             renderTree(); // Re-render to update icons
         });
-
-        function getSavedMainRatio() {
-            const saved = localStorage.getItem('mainRatio');
-            return saved ? parseFloat(saved) : null; // Return null if not found
-        }
 
         const applyLayout = (layout) => {
             currentLayout = layout;
