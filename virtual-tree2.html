@@ -6,7 +6,7 @@
     <title>Virtualised Tree</title>
     <style>
         :root {
-            /* Light theme (default) */
+            /* -------------------------------------- Light theme (default) */
             --background-color: #ffffec;
             --body-pane-color: #fff6f5;
             --find-pane-color: #f9f9f9;
@@ -17,6 +17,41 @@
             --focus-outline: #0000ff;
             --text-color: #000000;
             --caret-dim-color: #888;
+            /* -------------------------------------- vertical layout (default) */
+            /* body contains both outline-find-container, main splitter and body-pane */
+            --main-direction: row;
+
+            --main-resizer-width: 5px;
+            --main-resizer-height: 100%;
+
+            --main-resizer-cursor: ew-resize;
+
+            --main-resizer-extension-width: 5px;
+            --main-resizer-extension-height: 100%;
+            --main-resizer-extension-cursor: ew-resize;
+
+            --main-resizer-before-top: unset;
+            --main-resizer-before-left: -5px;
+            --main-resizer-after-right: -5px;
+            --main-resizer-after-bottom: unset;
+
+            /* outline-find-container contains outline-pane, secondary splitter and find-pane */
+            --secondary-direction: column;
+            --secondary-height: 100%;
+
+            --secondary-resizer-width: 100%;
+            --secondary-resizer-height: 5px;
+
+            --secondary-resizer-cursor: ns-resize;
+
+            --secondary-resizer-extension-width: 100%;
+            --secondary-resizer-extension-height: 5px;
+            --secondary-resizer-extension-cursor: ns-resize;
+
+            --secondary-resizer-before-top: -5px;
+            --secondary-resizer-before-left: unset;
+            --secondary-resizer-after-right: unset;
+            --secondary-resizer-after-bottom: -5px;
         }
 
         [data-theme="dark"] {
@@ -31,6 +66,12 @@
             --focus-outline: #7aa2f7;
             --text-color: #cdd6f4;
             --caret-dim-color: #999;
+        }
+
+        [data-layout="horizontal"] {
+            /*  horizontal layout */
+            --main-direction: column;
+            /* TODO : ...rest of the variables */
         }
 
         .icon0 {
@@ -99,19 +140,27 @@
 
         body {
             margin: 0;
+
             display: flex;
+            flex-direction: row;
+
             height: 100vh;
             transition: color 0.15s ease, background-color 0.15s ease;
             background-color: var(--background-color);
             color: var(--text-color);
         }
 
-        body.dragging {
+        body.dragging-ew {
             cursor: ew-resize !important;
+        }
+
+        body.dragging-ns {
+            cursor: ns-resize !important;
         }
 
         #outline-pane {
             white-space: nowrap;
+            /* TODO : PADDING */
             /* padding: 1rem 0 0 0; */
             overflow-x: hidden;
             overflow-y: auto;
@@ -121,6 +170,7 @@
         #main-resizer {
             position: relative;
             width: 5px;
+            height: 100%;
             cursor: ew-resize;
             background-color: var(--resizer-color);
         }
@@ -130,21 +180,21 @@
             /* Invisible extension width extended with before/after below */
             content: "";
             position: absolute;
-            top: 0;
             height: 100%;
             width: 5px;
             cursor: ew-resize;
         }
 
         #main-resizer::before {
+            top: unset;
             left: -5px;
         }
 
         #main-resizer::after {
             right: -5px;
+            bottom: unset;
         }
 
-        /* Make the outline-find-container a flex container with column direction */
         #outline-find-container {
             display: flex;
             flex-direction: column;
@@ -152,7 +202,6 @@
             overflow: hidden;
         }
 
-        /* The secondary resizer should have similar properties to the main resizer */
         #secondary-resizer {
             position: relative;
             height: 5px;
@@ -165,7 +214,6 @@
         #secondary-resizer::after {
             content: "";
             position: absolute;
-            left: 0;
             width: 100%;
             height: 5px;
             cursor: ns-resize;
@@ -215,26 +263,13 @@
             outline-offset: -3px;
         }
 
-        .selected>.node-text {
-            position: relative;
-        }
-
-        .selected>.node-text::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: var(--selected-bg);
-            z-index: -1;
-            border-radius: 4px;
-        }
-
+        .selected>.node-text,
         .ancestor>.node-text {
             position: relative;
         }
 
+        .node-text:hover::before,
+        .selected>.node-text::before,
         .ancestor>.node-text::before {
             content: "";
             position: absolute;
@@ -242,18 +277,21 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: var(--ancestor-bg);
             z-index: -1;
             border-radius: 4px;
         }
 
-        /* node-text light hover color */
-        .node-text:hover {
-            background-color: var(--hover-bg);
+        .selected>.node-text::before,
+        .selected>.node-text:hover::before {
+            background-color: var(--selected-bg);
         }
 
-        .selected>.node-text:hover {
-            background-color: var(--selected-bg);
+        .ancestor>.node-text::before {
+            background-color: var(--ancestor-bg);
+        }
+
+        .node-text:hover::before {
+            background-color: var(--hover-bg);
         }
 
         .node {
@@ -264,11 +302,8 @@
             display: grid;
             grid-template-columns: 1em 1fr;
             align-items: start;
-            /* row-gap: 2px; */
-            /* padding: 2px 0; */
         }
 
-        /* Caret stays a small target in the first column */
         .caret {
             grid-column: 1;
             display: inline-block;
@@ -291,7 +326,6 @@
             border-radius: 4px;
         }
 
-        /* Caret glyphs */
         .caret::after {
             display: inline-block;
             position: relative;
@@ -581,6 +615,7 @@
         const expanded = new Set(); // No need to add the root because 'isExpanded' will return true for it
         let selectedNode = null; // Track the currently selected node
         let currentTheme = 'light'; // Default theme
+        let currentLayout = 'vertical'; // Default layout
         let isDragging = false;
         let mainRatio = 0.25; // Default proportion between outline-find-container and body-pane widths (defaults to 1/4)
         let secondaryIsDragging = false;
@@ -1204,7 +1239,7 @@
 
         function startDrag(e) {
             isDragging = true;
-            document.body.classList.add('dragging');
+            document.body.classList.add('dragging-ew');
             e.preventDefault();
             document.addEventListener('mousemove', handleDrag);
             document.addEventListener('mouseup', stopDrag);
@@ -1215,7 +1250,7 @@
         function stopDrag() {
             if (isDragging) {
                 isDragging = false;
-                document.body.classList.remove('dragging');
+                document.body.classList.remove('dragging-ew');
                 document.removeEventListener('mousemove', handleDrag);
                 document.removeEventListener('mouseup', stopDrag);
                 document.removeEventListener('touchmove', handleDrag);
@@ -1255,8 +1290,6 @@
             // Set flex properties to control the distribution
             OUTLINE_PANE.style.flex = `0 0 ${newHeight}px`;
             FIND_PANE.style.flex = `1 1 auto`; // Let it take the remaining space
-
-            renderTree();
         }
 
         const handleSecondaryDrag = throttle(function (e) {
@@ -1282,7 +1315,7 @@
 
         function startSecondaryDrag(e) {
             secondaryIsDragging = true;
-            document.body.classList.add('dragging');
+            document.body.classList.add('dragging-ns');
             e.preventDefault();
             document.addEventListener('mousemove', handleSecondaryDrag);
             document.addEventListener('mouseup', stopSecondaryDrag);
@@ -1293,7 +1326,7 @@
         function stopSecondaryDrag() {
             if (secondaryIsDragging) {
                 secondaryIsDragging = false;
-                document.body.classList.remove('dragging');
+                document.body.classList.remove('dragging-ns');
                 document.removeEventListener('mousemove', handleSecondaryDrag);
                 document.removeEventListener('mouseup', stopSecondaryDrag);
                 document.removeEventListener('touchmove', handleSecondaryDrag);
@@ -1303,6 +1336,10 @@
             }
         }
 
+        function updatePanelSizes() {
+            updateOutlineContainerSize();
+            updateOutlinePaneSize();
+        }
 
         // Initialize resizer
         VERTICAL_RESIZER.addEventListener('mousedown', startDrag);
@@ -1310,8 +1347,8 @@
         HORIZONTAL_RESIZER.addEventListener('mousedown', startSecondaryDrag);
         HORIZONTAL_RESIZER.addEventListener('touchstart', startSecondaryDrag);
         window.addEventListener('resize', throttle(() => {
-            updateOutlineContainerSize();
-            updateOutlinePaneSize();
+            updatePanelSizes();
+            renderTree();
         }, 67));
 
         // Prevent text selection on double-click
@@ -1475,19 +1512,23 @@
         }
 
         const applyLayout = (layout) => {
-            localStorage.setItem('layout', layout);
+            currentLayout = layout;
+
             console.log(`TODO: (in 'applyLayout') Switching to ${layout} layout`);
 
+            localStorage.setItem('layout', layout);
             LAYOUT_TOGGLE.title = layout === 'vertical' ? 'Switch to horizontal layout' : 'Switch to vertical layout';
             if (layout === 'horizontal') {
                 LAYOUT_ICON.style.transform = 'rotate(90deg)';
             } else {
                 LAYOUT_ICON.style.transform = 'rotate(0deg)';
             }
+            // Proportions will have changed so we must update sizes
+            updatePanelSizes();
+            renderTree();
         };
 
         LAYOUT_TOGGLE.addEventListener('click', () => {
-            const currentLayout = getCurrentLayout();
             const newLayout = currentLayout === 'vertical' ? 'horizontal' : 'vertical';
             applyLayout(newLayout);
         });
@@ -1519,8 +1560,7 @@
                 console.log(`Restored saved outline-find proportion: ${secondaryRatio}`);
             }
 
-            updateOutlineContainerSize();
-            updateOutlinePaneSize();
+            updatePanelSizes();
 
             // Initial render
             renderTree();
