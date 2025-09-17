@@ -1834,6 +1834,12 @@
                     data[selectedNode.gnx].icon ^= 2; // Toggle mark bit (selectedNode will never be the hidden root node)
                     renderTree(); // Re-render to update icons
                 }
+            } else if (e.key === 'F2') {
+                e.preventDefault();
+                findPrevious();
+            } else if (e.key === 'F3') {
+                e.preventDefault();
+                findNext();
             }
         }
 
@@ -1869,11 +1875,11 @@
 
         // Find functionality
         function findNext() {
-            showToast('Find functionality not yet implemented', 1500);
+            showToast('Find-Next functionality not yet implemented', 1500);
         }
 
         function findPrevious() {
-            showToast('Find functionality not yet implemented', 1500);
+            showToast('Find-Previous functionality not yet implemented', 1500);
         }
 
         // Modified initialization function to call the setup
@@ -1913,9 +1919,8 @@
                 __toastTimer = null;
             }, duration);
         }
-        // Expose globally if you want to call from the console
-        window.showToast = showToast;
 
+        // Start everything once DOM is loaded
         window.addEventListener('DOMContentLoaded', handleDOMContentLoaded);
 
     </script>
