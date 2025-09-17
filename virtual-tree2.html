@@ -172,11 +172,45 @@
         }
 
         #outline-pane {
+            position: relative;
             white-space: nowrap;
-            padding-top: 4px;
+            padding-top: 6px;
             overflow-x: hidden;
             overflow-y: auto;
             font-family: sans-serif;
+        }
+
+        #spacer {
+            position: relative;
+        }
+
+        #collapse-all-btn {
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+        }
+
+        #outline-pane:hover #collapse-all-btn {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .outline-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+
+        .outline-icon:hover svg {
+            transform: scale(1.1);
+            transition: transform 0.1s ease;
         }
 
         #main-resizer {
@@ -347,7 +381,7 @@
             grid-column: 2;
             display: block;
             padding: 2px 0 2px 26px;
-            margin-right: 1rem;
+            margin-right: 1.2rem;
             border-radius: 4px;
         }
 
@@ -689,11 +723,21 @@
       So in total, there are three panes and two resizers. The rest are just floating buttons which are not part of the layout.
     -->
     <div id="outline-find-container">
-        <div id="outline-pane" tabindex="0"></div>
+        <div id="outline-pane" tabindex="0">
+            <div id="spacer"></div>
+            <div id="collapse-all-btn" class="outline-icon" title="Collapse All" role="button"
+                aria-label="Collapse All">
+                <svg width="16" height="16" fill="currentColor">
+                    <path
+                        d="M 6 2 L 5 3 L 5 5 L 3 5 L 2 6 L 2 13 L 3 14 L 10 14 L 11 13 L 11 11 L 13 11 L 14 10 L 14 3 L 13 2 L 6 2 z M 6 3 L 13 3 L 13 10 L 11 10 L 11 6 L 10 5 L 6 5 L 6 3 z M 3 6 L 10 6 L 10 13 L 3 13 L 3 6 z M 4 9 L 4 10 L 9 10 L 9 9 L 4 9 z "
+                        style="fill:var(--find-border-color);" />
+                </svg>
+            </div>
+        </div>
         <div id="secondary-resizer"></div>
         <div id="find-pane">
             <input id="find-input" type="text" autocomplete="off" placeholder="&lt;find pattern here&gt;"
-                aria-label="Find pattern">
+                title="Ctrl+F: Search | F3/F2: Next/Prev" aria-label="Find pattern">
             <div class="find-controls" role="region" aria-label="Find options">
                 <div class="find-col checkboxes" aria-label="Search options">
                     <label for="opt-whole">
@@ -929,13 +973,15 @@
         // History navigation state
         const navigationHistory = [];
         let currentHistoryIndex = -1; // -1 means no history yet
-        const minWidth = 0;
+        const minWidth = 20;
         const minHeight = 20;
 
         const ROW_HEIGHT = 26;
         const LEFT_OFFSET = 16; // Padding from left edge
         const OUTLINE_FIND_CONTAINER = document.getElementById("outline-find-container");
         const OUTLINE_PANE = document.getElementById("outline-pane");
+        const COLLAPSE_ALL_BTN = document.getElementById("collapse-all-btn");
+        const SPACER = document.getElementById("spacer");
         const BODY_PANE = document.getElementById("body-pane");
         const VERTICAL_RESIZER = document.getElementById('main-resizer');
         const FIND_PANE = document.getElementById("find-pane");
@@ -1326,7 +1372,6 @@
 
         // -------------------------------------- History
         function updateHistoryButtonStates() {
-            console.log('History index:', currentHistoryIndex, 'History length:', navigationHistory.length);
             // Disable/enable buttons based on history position
             PREV_BTN.disabled = currentHistoryIndex <= 0;
             NEXT_BTN.disabled = currentHistoryIndex >= navigationHistory.length - 1 || navigationHistory.length === 0;
@@ -1496,11 +1541,8 @@
             const visibleCount = Math.ceil(viewportHeight / ROW_HEIGHT) + 1;
             const endIndex = Math.min(flatRows.length, startIndex + visibleCount);
 
-            OUTLINE_PANE.innerHTML = "";
-            const spacer = document.createElement("div"); // Spacer simulates full height
-            spacer.style.height = flatRows.length * ROW_HEIGHT + "px";
-            spacer.style.position = "relative";
-            OUTLINE_PANE.appendChild(spacer);
+            SPACER.innerHTML = "";
+            SPACER.style.height = flatRows.length * ROW_HEIGHT + "px";
 
             for (let i = startIndex; i < endIndex; i++) {
                 const row = flatRows[i];
@@ -1547,7 +1589,7 @@
                 labelSpan.textContent = row.label;
 
                 div.appendChild(labelSpan);
-                spacer.appendChild(div);
+                SPACER.appendChild(div);
             }
         }
 
@@ -1616,9 +1658,9 @@
                 }
                 const newWidth = clientX;
                 if (newWidth >= minWidth) {
-                    OUTLINE_FIND_CONTAINER.style.width = newWidth + 'px';
+                    OUTLINE_FIND_CONTAINER.style.width = (newWidth - 3) + 'px';
                 } else {
-                    OUTLINE_FIND_CONTAINER.style.width = minWidth + 'px';
+                    OUTLINE_FIND_CONTAINER.style.width = (minWidth - 3) + 'px';
                 }
             } else {
                 let clientY = e.clientY;
@@ -1627,9 +1669,9 @@
                 }
                 const newHeight = clientY;
                 if (newHeight >= minWidth) {
-                    OUTLINE_FIND_CONTAINER.style.height = newHeight + 'px';
+                    OUTLINE_FIND_CONTAINER.style.height = (newHeight - 3) + 'px';
                 } else {
-                    OUTLINE_FIND_CONTAINER.style.height = minWidth + 'px';
+                    OUTLINE_FIND_CONTAINER.style.height = (minWidth - 3) + 'px';
                 }
             }
             renderTree();
@@ -1712,21 +1754,15 @@
 
         const handleSecondaryDrag = throttle(function (e) {
             if (currentLayout === 'vertical') {
-
                 let clientY = e.clientY;
                 if (e.touches) {
                     clientY = e.touches[0].clientY;
                 }
-
-                // Get the top position of the outline-find-container
                 const containerRect = OUTLINE_FIND_CONTAINER.getBoundingClientRect();
                 const relativeY = clientY - containerRect.top;
                 const containerHeight = OUTLINE_FIND_CONTAINER.offsetHeight;
-
-                // Ensure we respect minimum heights
                 if (relativeY >= minHeight && relativeY <= containerHeight - minHeight) {
-                    // Set flex properties to control the distribution
-                    OUTLINE_PANE.style.flex = `0 0 ${relativeY}px`;
+                    OUTLINE_PANE.style.flex = `0 0 ${relativeY - 8}px`;
                     FIND_PANE.style.flex = `1 1 auto`; // Let it take the remaining space
                 }
             } else {
@@ -1734,16 +1770,11 @@
                 if (e.touches) {
                     clientX = e.touches[0].clientX;
                 }
-
-                // Get the left position of the outline-find-container
                 const containerRect = OUTLINE_FIND_CONTAINER.getBoundingClientRect();
                 const relativeX = clientX - containerRect.left;
                 const containerWidth = OUTLINE_FIND_CONTAINER.offsetWidth;
-
-                // Ensure we respect minimum widths
                 if (relativeX >= minHeight && relativeX <= containerWidth - minHeight) {
-                    // Set flex properties to control the distribution
-                    OUTLINE_PANE.style.flex = `0 0 ${relativeX}px`;
+                    OUTLINE_PANE.style.flex = `0 0 ${relativeX - 3}px`;
                     FIND_PANE.style.flex = `1 1 auto`; // Let it take the remaining space
                 }
             }
@@ -1853,6 +1884,7 @@
         }
 
         function setupButtonHandlers() {
+            COLLAPSE_ALL_BTN.addEventListener('click', collapseAll);
             THEME_TOGGLE.addEventListener('click', handleThemeToggleClick);
             LAYOUT_TOGGLE.addEventListener('click', handleLayoutToggleClick);
             HOIST_BTN.addEventListener('click', hoistNode);
