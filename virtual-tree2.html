@@ -19,7 +19,7 @@
             --caret-dim-color: #888;
             --find-text-color: #444;
             --find-placeholder-color: #888;
-            --find-border-color: #ccc;
+            --find-border-color: #a0a0a0;
             --find-selection: #0078d7;
             /* vertical layout (default) */
             --main-direction: row;
@@ -57,8 +57,8 @@
             --text-color: #cdd6f4;
             --caret-dim-color: #999;
             --find-text-color: #aeb6d1;
-            --find-placeholder-color: #50597a;
-            --find-border-color: #3f445e;
+            --find-placeholder-color: #5a699e;
+            --find-border-color: #81889e;
             --find-selection: #3c54ce;
         }
 
@@ -482,10 +482,10 @@
             transition: transform 0.3s ease;
         }
 
-        #hoist-btn,
         #dehoist-btn,
-        #prev-btn,
-        #next-btn {
+        #hoist-btn,
+        #next-btn,
+        #prev-btn {
             position: fixed;
             top: 20px;
             width: 32px;
@@ -505,21 +505,22 @@
             overflow: hidden;
         }
 
-        #hoist-btn {
+        #dehoist-btn {
             right: 100px;
         }
 
-        #dehoist-btn {
+        #hoist-btn {
             right: 140px;
         }
 
-        #prev-btn {
+        #next-btn {
             right: 180px;
         }
 
-        #next-btn {
+        #prev-btn {
             right: 220px;
         }
+
 
         .svg-icon svg {
             display: block;
@@ -571,7 +572,7 @@
             padding: 0.4rem 0.5rem;
             margin: 0;
             border-radius: 3px;
-            border: 1px solid var(--find-text-color);
+            border: 1px solid var(--find-border-color);
             background: transparent;
             color: var(--find-text-color);
             font-family: sans-serif;
@@ -585,7 +586,7 @@
             appearance: none;
             width: 20px;
             height: 20px;
-            border: 1px solid var(--find-text-color);
+            border: 1px solid var(--find-border-color);
             border-radius: 3px;
             background-color: var(--find-pane-color);
             position: relative;
@@ -598,7 +599,7 @@
             top: -2px;
             width: 4px;
             height: 12px;
-            border: solid var(--find-text-color);
+            border: solid var(--find-border-color);
             border-width: 0 2px 2px 0;
             transform: rotate(45deg);
         }
@@ -607,7 +608,7 @@
             appearance: none;
             width: 20px;
             height: 20px;
-            border: 1px solid var(--find-text-color);
+            border: 1px solid var(--find-border-color);
             border-radius: 50%;
             background-color: var(--find-pane-color);
             position: relative;
@@ -732,14 +733,6 @@
     <div id="body-pane" tabindex="0" contenteditable="plaintext-only"></div>
     <button id="theme-toggle" aria-label="Toggle dark/light mode"><span id="toggle-icon">🌓</span></button>
     <button id="layout-toggle" aria-label="Toggle layout orientation"><span id="layout-icon">📐</span></button>
-    <button id="hoist-btn" aria-label="Hoist" title="Hoist">
-        <span class="svg-icon" id="hoist-icon">
-            <!-- Down triangle SVG -->
-            <svg width="20" height="20" viewBox="0 0 20 20">
-                <polygon points="10,15 3,7 17,7" fill="#444" />
-            </svg>
-        </span>
-    </button>
     <button id="dehoist-btn" aria-label="De-hoist" title="De-hoist">
         <span class="svg-icon" id="dehoist-icon">
             <!-- Up triangle SVG -->
@@ -748,11 +741,11 @@
             </svg>
         </span>
     </button>
-    <button id="prev-btn" aria-label="Goto Previous" title="Goto Previous">
-        <span class="svg-icon" id="prev-icon">
-            <!-- Left triangle SVG -->
+    <button id="hoist-btn" aria-label="Hoist" title="Hoist">
+        <span class="svg-icon" id="hoist-icon">
+            <!-- Down triangle SVG -->
             <svg width="20" height="20" viewBox="0 0 20 20">
-                <polygon points="6,10 14,3 14,17" fill="#444" />
+                <polygon points="10,15 3,7 17,7" fill="#444" />
             </svg>
         </span>
     </button>
@@ -760,7 +753,15 @@
         <span class="svg-icon" id="next-icon">
             <!-- Right triangle SVG -->
             <svg width="20" height="20" viewBox="0 0 20 20">
-                <polygon points="14,10 6,3 6,17" fill="#444" />
+                <polygon points="14,10 6,3 6,17" fill="#494" />
+            </svg>
+        </span>
+    </button>
+    <button id="prev-btn" aria-label="Goto Previous" title="Goto Previous">
+        <span class="svg-icon" id="prev-icon">
+            <!-- Left triangle SVG -->
+            <svg width="20" height="20" viewBox="0 0 20 20">
+                <polygon points="6,10 14,3 14,17" fill="#494" />
             </svg>
         </span>
     </button>
