@@ -325,7 +325,7 @@
             content: "";
             position: absolute;
             top: 0;
-            left: 0;
+            left: -2px;
             right: 0;
             bottom: 0;
             z-index: -1;
@@ -375,9 +375,9 @@
 
         .node-text {
             background-repeat: no-repeat;
-            background-position-x: 3px;
-            background-position-y: 2px;
-            background-size: 18px 18px;
+            background-position-x: 2px;
+            background-position-y: 1px;
+            background-size: 19px 19px;
             grid-column: 2;
             display: block;
             padding: 2px 0 2px 26px;
@@ -822,6 +822,7 @@
     </button>
     <div id="toast" role="status" aria-live="polite" hidden></div>
     <script>
+        const title = "Virtual Tree View Demo 2"; // Also used as key for localstorage save/restore of expanded and marked sets.
         const tree = {
             "gnx": 0,
             "children": [
@@ -2076,6 +2077,7 @@
 
         // Modified initialization function to call the setup
         function initializeLayout() {
+            document.title = title; // Set the document title
             const savedOutlineBodyRatio = getSavedMainRatio();
             const savedOutlineFindRatio = getSavedSecondaryRatio();
 
