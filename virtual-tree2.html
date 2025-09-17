@@ -407,6 +407,7 @@
             }
         }
 
+        /* -------------------- buttons -------------------- */
         #theme-toggle {
             position: fixed;
             top: 20px;
@@ -473,7 +474,6 @@
             top: 0;
         }
 
-        /* vertical is default */
         [data-layout="horizontal"] #layout-icon {
             transform: rotate(90deg);
         }
@@ -482,6 +482,52 @@
             transition: transform 0.3s ease;
         }
 
+        #hoist-btn,
+        #dehoist-btn,
+        #prev-btn,
+        #next-btn {
+            position: fixed;
+            top: 20px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--resizer-color);
+            color: var(--text-color);
+            border: 2px solid var(--text-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            line-height: 1;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        #hoist-btn {
+            right: 100px;
+        }
+
+        #dehoist-btn {
+            right: 140px;
+        }
+
+        #prev-btn {
+            right: 180px;
+        }
+
+        #next-btn {
+            right: 220px;
+        }
+
+        .svg-icon svg {
+            display: block;
+            width: 20px;
+            height: 20px;
+        }
+
+        /* -------------------- find pane -------------------- */
         #find-pane .find-controls {
             font-family: sans-serif;
             display: flex;
@@ -597,6 +643,7 @@
             outline-offset: -1px;
         }
 
+        /* -------------------- toast -------------------- */
         #toast {
             position: fixed;
             top: 16px;
@@ -685,6 +732,41 @@
     <div id="body-pane" tabindex="0" contenteditable="plaintext-only"></div>
     <button id="theme-toggle" aria-label="Toggle dark/light mode"><span id="toggle-icon">🌓</span></button>
     <button id="layout-toggle" aria-label="Toggle layout orientation"><span id="layout-icon">📐</span></button>
+    <button id="hoist-btn" aria-label="Hoist" title="Hoist">
+        <span class="svg-icon" id="hoist-icon">
+            <!-- Down triangle SVG -->
+            <svg width="20" height="20" viewBox="0 0 20 20">
+                <polygon points="10,15 3,7 17,7" fill="#444" />
+            </svg>
+        </span>
+    </button>
+    <button id="dehoist-btn" aria-label="De-hoist" title="De-hoist">
+        <span class="svg-icon" id="dehoist-icon">
+            <!-- Up triangle SVG -->
+            <svg width="20" height="20" viewBox="0 0 20 20">
+                <polygon points="10,5 3,13 17,13" fill="#444" />
+            </svg>
+        </span>
+    </button>
+    <button id="prev-btn" aria-label="Goto Previous" title="Goto Previous">
+        <span class="svg-icon" id="prev-icon">
+            <!-- Left triangle SVG -->
+            <svg width="20" height="20" viewBox="0 0 20 20">
+                <polygon points="6,10 14,3 14,17" fill="#444" />
+            </svg>
+        </span>
+    </button>
+    <button id="next-btn" aria-label="Goto Next" title="Goto Next">
+        <span class="svg-icon" id="next-icon">
+            <!-- Right triangle SVG -->
+            <svg width="20" height="20" viewBox="0 0 20 20">
+                <polygon points="14,10 6,3 6,17" fill="#444" />
+            </svg>
+        </span>
+    </button>
+
+
+
     <div id="toast" role="status" aria-live="polite" hidden></div>
     <script>
         const tree = {
@@ -1643,7 +1725,7 @@
             setupBodyPaneHandlers();
             setupResizerHandlers();
             setupWindowHandlers();
-            setupToggleHandlers();
+            setupButtonHandlers();
             setupFindPaneHandlers();
         }
 
@@ -1676,9 +1758,21 @@
             window.addEventListener('keydown', handleGlobalKeyDown);
         }
 
-        function setupToggleHandlers() {
+        function setupButtonHandlers() {
             THEME_TOGGLE.addEventListener('click', handleThemeToggleClick);
             LAYOUT_TOGGLE.addEventListener('click', handleLayoutToggleClick);
+            document.getElementById('hoist-btn').addEventListener('click', function () {
+                showToast('Hoist clicked (not implemented)', 1200);
+            });
+            document.getElementById('dehoist-btn').addEventListener('click', function () {
+                showToast('De-hoist clicked (not implemented)', 1200);
+            });
+            document.getElementById('prev-btn').addEventListener('click', function () {
+                showToast('Previous clicked (not implemented)', 1200);
+            });
+            document.getElementById('next-btn').addEventListener('click', function () {
+                showToast('Next clicked (not implemented)', 1200);
+            });
         }
 
         function setupFindPaneHandlers() {
