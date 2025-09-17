@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Virtualised Tree</title>
+    <title>Leo Document Viewer</title>
     <style>
         :root {
             /* light theme (default) */
@@ -971,9 +971,11 @@
         let mainRatio = 0.25; // Default proportion between outline-find-container and body-pane widths (defaults to 1/4)
         let secondaryIsDragging = false;
         let secondaryRatio = 0.75; // Default proportion between the outline-pane and the find-pane (defaults to 3/4)
-        // History navigation state
+
         const navigationHistory = [];
         let currentHistoryIndex = -1; // -1 means no history yet
+        const hoistStack = []; // Track hoisted nodes
+
         const minWidth = 20;
         const minHeight = 20;
 
@@ -1001,7 +1003,6 @@
         const OPT_BODY = document.getElementById('opt-body');
 
         const HTML_ELEMENT = document.documentElement;
-
 
         // -------------------------------------- Navigation helpers
         function children(node) {
@@ -1056,9 +1057,23 @@
             return expanded.has(node);
         }
 
+        function isDescendantOfHoistedNode(node) {
+            if (!node || hoistStack.length === 0) return false;
+
+            const hoistedNode = hoistStack[hoistStack.length - 1];
+            return hoistedNode === node || isAncestorOf(hoistedNode, node);
+        }
+
         function isVisible(node) {
             // Return True if node is visible in the outline.
-            if (!node.parent) return false; // Should not happen for valid nodes because the top nodes are in the #outline-pane div
+            if (!node.parent) return false; // Root node is not visible
+
+            // First check if the node is descendant of the hoisted node
+            if (hoistStack.length > 0 && !isDescendantOfHoistedNode(node)) {
+                return false;
+            }
+
+            // Then check if all ancestors are expanded
             const ancestors = parents(node);
             for (const ancestor of ancestors) {
                 if (!isExpanded(ancestor)) {
@@ -1231,24 +1246,43 @@
         };
 
         // -------------------------------------- Navigation actions
-        function previousHistory() {
-            // TODO : select the last position in the history and go there. (dehoist and expand as needed)
-            showToast('Previous clicked (not implemented)', 1200);
-        }
-
-        function nextHistory() {
-            // TODO : select the next position in the history and go there. (dehoist and expand as needed)
-            showToast('Next clicked (not implemented)', 1200);
-        }
-
         function hoistNode() {
-            // TODO : Hoist the presently selected node. Push the current node onto a hoist stack. It is now the top-visible node. 
-            showToast('Hoist clicked (not implemented)', 1200);
+            if (!selectedNode) return;
+
+            // If selected node is already hoisted, do nothing
+            if (hoistStack.length > 0 && hoistStack[hoistStack.length - 1] === selectedNode) return;
+
+            // Can't hoist the root node (though it should never be selected anyway)
+            if (!selectedNode.parent) return;
+
+            // Push the selected node onto the hoist stack
+            hoistStack.push(selectedNode);
+
+            // If collapsed, expand it
+            if (hasChildren(selectedNode) && !isExpanded(selectedNode)) {
+                expanded.add(selectedNode);
+                selectedNode.toggled = true; // Mark as toggled
+            }
+
+            // Update UI
+            updateHoistButtonStates();
+
+            // Re-flatten and render the tree
+            flatRows = flattenTree(getCurrentRoot(), 0, false);
+            renderTree();
         }
 
         function dehoistNode() {
-            // TODO : De-hoist the presently selected node. Pop the hoist stack if any. The new top-visible node is now selected.
-            showToast('De-hoist clicked (not implemented)', 1200);
+            if (hoistStack.length === 0) return;
+
+            // Pop the top node from the hoist stack
+            const previousHoist = hoistStack.pop();
+
+            // Select the node that was hoisted
+            selectAndOrToggleAndRedraw(previousHoist);
+
+            // Update UI
+            updateHoistButtonStates();
         }
 
         function expandNodeAndGoToFirstChild() {
@@ -1371,6 +1405,13 @@
             }
         }
 
+        // -------------------------------------- Hoist button
+        function updateHoistButtonStates() {
+            // Update hoist/dehoist button states
+            DEHOIST_BTN.disabled = hoistStack.length === 0;
+            HOIST_BTN.disabled = !selectedNode || !hasChildren(selectedNode);
+        }
+
         // -------------------------------------- History
         function updateHistoryButtonStates() {
             // Disable/enable buttons based on history position
@@ -1421,6 +1462,11 @@
         }
 
         // -------------------------------------- Rendering helpers
+        function getCurrentRoot() {
+            // Return the current top of the hoist stack or the main tree root
+            return hoistStack.length > 0 ? hoistStack[hoistStack.length - 1] : tree;
+        }
+
         function flattenTree(node, depth = 0, isRoot = true) {
             let rows = [];
 
@@ -1466,21 +1512,36 @@
 
             // Handle selection if requested
             if (isNew) {
+                let hoistTop = getCurrentRoot();
+
+                // While the top of hoist stack is not an ancestor of the new selected node, pop it
+                while (newSelectedNode !== hoistTop && hoistStack.length > 0 && !isAncestorOf(hoistTop, newSelectedNode)) {
+                    hoistStack.pop();
+                    hoistTop = getCurrentRoot();
+                }
+
                 // Ensure all parent nodes are expanded so the selected node is visible
                 let currentNode = newSelectedNode;
-                while (currentNode && currentNode.parent) {
+                while (currentNode && currentNode.parent && currentNode !== hoistTop) {
                     // Skip the hidden root node since it's always expanded (When hoist is implemented, stop at hoist root)
                     if (currentNode.parent.parent) {
                         expanded.add(currentNode.parent);
                     }
                     currentNode = currentNode.parent;
                 }
+
                 selectedNode = newSelectedNode;
                 addToHistory(newSelectedNode);
+                updateHoistButtonStates();
             }
 
             // Only rebuild and redraw once
-            flatRows = flattenTree(tree); // Todo: When hoist is implemented, if hoisted, dont start with 'tree'. // Start up, so not hoisted. Safe to start with 'tree'.
+            const currentRoot = getCurrentRoot();
+            const isHoisted = hoistStack.length > 0;
+
+            // If hoisted, pass isRoot=false to make the hoisted node visible
+            // If not hoisted, use the hidden root with isRoot=true
+            flatRows = flattenTree(currentRoot, 0, !isHoisted);
             renderTree();
 
             // Update body pane if selection changed (selectedNode cannot be null here because of isNew check)
