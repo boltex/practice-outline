@@ -407,11 +407,8 @@
             }
         }
 
-        /* -------------------- buttons -------------------- */
-        #theme-toggle {
-            position: fixed;
-            top: 20px;
-            right: 20px;
+        /* buttons */
+        .action-button {
             width: 32px;
             height: 32px;
             border-radius: 50%;
@@ -426,83 +423,22 @@
             line-height: 1;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
             z-index: 1000;
-            transition: transform 0.2s ease;
+            position: fixed;
+            top: 20px;
             overflow: hidden;
+            transition: transform 0.2s ease;
         }
 
-        #theme-toggle:hover {
+        .action-button:hover {
             transform: scale(1.1);
         }
 
-        #toggle-icon {
-            position: relative;
-            top: 0;
-            transition: top 0.3s ease;
-        }
-
-        #theme-toggle:active #toggle-icon {
-            top: 25px;
+        #theme-toggle {
+            right: 20px;
         }
 
         #layout-toggle {
-            position: fixed;
-            top: 20px;
             right: 60px;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: var(--resizer-color);
-            color: var(--text-color);
-            border: 2px solid var(--text-color);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            line-height: 1;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-            overflow: hidden;
-        }
-
-        #layout-toggle:hover {
-            transform: scale(1.1);
-        }
-
-        #layout-icon {
-            position: relative;
-            top: 0;
-        }
-
-        [data-layout="horizontal"] #layout-icon {
-            transform: rotate(90deg);
-        }
-
-        [data-transition="true"] #layout-icon {
-            transition: transform 0.3s ease;
-        }
-
-        #dehoist-btn,
-        #hoist-btn,
-        #next-btn,
-        #prev-btn {
-            position: fixed;
-            top: 20px;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: var(--resizer-color);
-            color: var(--text-color);
-            border: 2px solid var(--text-color);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            line-height: 1;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-            overflow: hidden;
         }
 
         #dehoist-btn {
@@ -521,6 +457,51 @@
             right: 220px;
         }
 
+        .svg-icon {
+            position: relative;
+            top: 0;
+            left: 0;
+            transition: top 0.3s ease, left 0.3s ease;
+        }
+
+        #dehoist-btn:active #dehoist-icon {
+            top: -10px;
+        }
+
+        #hoist-btn:active #hoist-icon {
+            top: 10px;
+        }
+
+        #prev-btn:active #prev-icon {
+            left: -10px;
+        }
+
+        #next-btn:active #next-icon {
+            left: 10px;
+        }
+
+        #toggle-icon {
+            position: relative;
+            top: 0;
+            transition: top 0.3s ease;
+        }
+
+        #theme-toggle:active #toggle-icon {
+            top: 25px;
+        }
+
+        #layout-icon {
+            position: relative;
+            top: 0;
+        }
+
+        [data-layout="horizontal"] #layout-icon {
+            transform: rotate(90deg);
+        }
+
+        [data-transition="true"] #layout-icon {
+            transition: transform 0.3s ease;
+        }
 
         .svg-icon svg {
             display: block;
@@ -528,12 +509,16 @@
             height: 20px;
         }
 
-        /* -------------------- find pane -------------------- */
+        /* find pane */
+        #find-pane {
+            padding: 0.5rem 0.5rem 0 0.5rem;
+        }
+
         #find-pane .find-controls {
             font-family: sans-serif;
             display: flex;
             gap: 0.5rem;
-            padding: 0.5rem;
+            padding-top: 0.5rem;
             align-items: flex-start;
             flex-wrap: wrap;
         }
@@ -568,6 +553,7 @@
 
         #find-input {
             width: 100%;
+            /* max-width: 260px; */
             box-sizing: border-box;
             padding: 0.4rem 0.5rem;
             margin: 0;
@@ -644,7 +630,7 @@
             outline-offset: -1px;
         }
 
-        /* -------------------- toast -------------------- */
+        /* toast */
         #toast {
             position: fixed;
             top: 16px;
@@ -683,9 +669,9 @@
         <div id="outline-pane" tabindex="0"></div>
         <div id="secondary-resizer"></div>
         <div id="find-pane">
+            <input id="find-input" type="text" autocomplete="off" placeholder="&lt;find pattern here&gt;"
+                aria-label="Find pattern">
             <div class="find-controls" role="region" aria-label="Find options">
-                <input id="find-input" type="text" autocomplete="off" placeholder="&lt;find pattern here&gt;"
-                    aria-label="Find pattern">
                 <div class="find-col checkboxes" aria-label="Search options">
                     <label for="opt-whole">
                         <input id="opt-whole" type="checkbox" name="find-option" />
@@ -731,43 +717,42 @@
     </div>
     <div id="main-resizer"></div>
     <div id="body-pane" tabindex="0" contenteditable="plaintext-only"></div>
-    <button id="theme-toggle" aria-label="Toggle dark/light mode"><span id="toggle-icon">🌓</span></button>
-    <button id="layout-toggle" aria-label="Toggle layout orientation"><span id="layout-icon">📐</span></button>
-    <button id="dehoist-btn" aria-label="De-hoist" title="De-hoist">
+    <button id="theme-toggle" class="action-button" aria-label="Toggle dark/light mode"><span
+            id="toggle-icon">🌓</span></button>
+    <button id="layout-toggle" class="action-button" aria-label="Toggle layout orientation"><span
+            id="layout-icon">📐</span></button>
+    <button id="dehoist-btn" class="action-button" aria-label="De-hoist" title="De-hoist">
         <span class="svg-icon" id="dehoist-icon">
-            <!-- Up triangle SVG -->
-            <svg width="20" height="20" viewBox="0 0 20 20">
-                <polygon points="10,5 3,13 17,13" fill="#444" />
+            <svg width="20" height="20" viewBox="0 0 17 17">
+                <path
+                    d="m 9.717,5.896 0.701,1.249 h 3.238 v 6.494 H 2.344 V 9.3649687 L 1.096,10.038969 V 14.896 h 13.808 v -9 z M 3.198,0.844 1.733,8.267 4.326,6.865 6.23,10.258 9.687,8.388 7.78,4.997 10.374,3.596 Z"
+                    style="fill:var(--find-text-color);" />
             </svg>
         </span>
     </button>
-    <button id="hoist-btn" aria-label="Hoist" title="Hoist">
+    <button id="hoist-btn" class="action-button" aria-label="Hoist" title="Hoist">
         <span class="svg-icon" id="hoist-icon">
-            <!-- Down triangle SVG -->
-            <svg width="20" height="20" viewBox="0 0 20 20">
-                <polygon points="10,15 3,7 17,7" fill="#444" />
+            <svg width="20" height="20" viewBox="0 0 17 17">
+                <path
+                    d="M 7.907,10.33 3.089,4.496 h 2.947 l 0.062,-3.89 3.93,0.002 -0.065,3.89 2.948,-0.001 z M 1.096,5.896 v 9 h 13.808 v -9 h -0.596094 l -1.07,1.249 H 13.656 v 6.494 H 2.344 V 7.145 h 0.4117139 l -1.031,-1.249 z"
+                    style="fill:var(--find-text-color);" />
             </svg>
         </span>
     </button>
-    <button id="next-btn" aria-label="Goto Next" title="Goto Next">
+    <button id="next-btn" class="action-button" aria-label="Goto Next" title="Goto Next">
         <span class="svg-icon" id="next-icon">
-            <!-- Right triangle SVG -->
             <svg width="20" height="20" viewBox="0 0 20 20">
                 <polygon points="14,10 6,3 6,17" fill="#494" />
             </svg>
         </span>
     </button>
-    <button id="prev-btn" aria-label="Goto Previous" title="Goto Previous">
+    <button id="prev-btn" class="action-button" aria-label="Goto Previous" title="Goto Previous">
         <span class="svg-icon" id="prev-icon">
-            <!-- Left triangle SVG -->
             <svg width="20" height="20" viewBox="0 0 20 20">
                 <polygon points="6,10 14,3 14,17" fill="#494" />
             </svg>
         </span>
     </button>
-
-
-
     <div id="toast" role="status" aria-live="polite" hidden></div>
     <script>
         const tree = {
@@ -933,6 +918,12 @@
         const THEME_ICON = document.getElementById('toggle-icon');
         const LAYOUT_TOGGLE = document.getElementById('layout-toggle');
         const LAYOUT_ICON = document.getElementById('layout-icon');
+
+        const DEHOIST_BTN = document.getElementById('dehoist-btn');
+        const HOIST_BTN = document.getElementById('hoist-btn');
+        const NEXT_BTN = document.getElementById('next-btn');
+        const PREV_BTN = document.getElementById('prev-btn');
+
         const FIND_INPUT = document.getElementById('find-input');
         const OPT_BODY = document.getElementById('opt-body');
 
@@ -1172,6 +1163,26 @@
         };
 
         // -------------------------------------- Navigation actions
+        function previousHistory() {
+            // TODO : select the last position in the history and go there. (dehoist and expand as needed)
+            showToast('Previous clicked (not implemented)', 1200);
+        }
+
+        function nextHistory() {
+            // TODO : select the next position in the history and go there. (dehoist and expand as needed)
+            showToast('Next clicked (not implemented)', 1200);
+        }
+
+        function hoistNode() {
+            // TODO : Hoist the presently selected node. Push the current node onto a hoist stack. It is now the top-visible node. 
+            showToast('Hoist clicked (not implemented)', 1200);
+        }
+
+        function dehoistNode() {
+            // TODO : De-hoist the presently selected node. Pop the hoist stack if any. The new top-visible node is now selected.
+            showToast('De-hoist clicked (not implemented)', 1200);
+        }
+
         function expandNodeAndGoToFirstChild() {
             // If the presently selected node has children, expand it if needed and go to the first child.
             let node = selectedNode;
@@ -1323,6 +1334,8 @@
         }
 
         function selectAndOrToggleAndRedraw(newSelectedNode = null, nodeToToggle = null) {
+            // TODO : Add to history if needed ! Not implemented yet.
+
             // Handle toggling if requested
             if (nodeToToggle) {
                 if (isExpanded(nodeToToggle)) {
@@ -1762,18 +1775,10 @@
         function setupButtonHandlers() {
             THEME_TOGGLE.addEventListener('click', handleThemeToggleClick);
             LAYOUT_TOGGLE.addEventListener('click', handleLayoutToggleClick);
-            document.getElementById('hoist-btn').addEventListener('click', function () {
-                showToast('Hoist clicked (not implemented)', 1200);
-            });
-            document.getElementById('dehoist-btn').addEventListener('click', function () {
-                showToast('De-hoist clicked (not implemented)', 1200);
-            });
-            document.getElementById('prev-btn').addEventListener('click', function () {
-                showToast('Previous clicked (not implemented)', 1200);
-            });
-            document.getElementById('next-btn').addEventListener('click', function () {
-                showToast('Next clicked (not implemented)', 1200);
-            });
+            HOIST_BTN.addEventListener('click', hoistNode);
+            DEHOIST_BTN.addEventListener('click', dehoistNode);
+            PREV_BTN.addEventListener('click', previousHistory);
+            NEXT_BTN.addEventListener('click', nextHistory);
         }
 
         function setupFindPaneHandlers() {
