@@ -48,6 +48,10 @@
             --secondary-resizer-before-left: unset;
             --secondary-resizer-after-right: unset;
             --secondary-resizer-after-bottom: -5px;
+            /* -------------------------------------- find pane */
+            --find-text-color: #000;
+            --find-placeholder-color: #888;
+
         }
 
         [data-theme="dark"] {
@@ -62,6 +66,8 @@
             --focus-outline: #7aa2f7;
             --text-color: #cdd6f4;
             --caret-dim-color: #999;
+            --find-text-color: #cdd6f4;
+            --find-placeholder-color: #888;
         }
 
         [data-layout="horizontal"] {
@@ -608,8 +614,8 @@
             top: 16px;
             left: 50%;
             transform: translateX(-50%) translateY(-10px);
-            background: rgba(0, 0, 0, 0.78);
-            color: #fff;
+            background: var(--body-pane-color);
+            color: var(--text-color);
             padding: 8px 12px;
             border-radius: 6px;
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
@@ -619,11 +625,7 @@
             z-index: 2000;
             font-family: sans-serif;
             font-size: 13px;
-        }
-
-        [data-theme="dark"] #toast {
-            background: rgba(255, 255, 255, 0.12);
-            color: var(--text-color);
+            white-space: pre;
         }
 
         #toast.show {
@@ -864,6 +866,9 @@
         const THEME_ICON = document.getElementById('toggle-icon');
         const LAYOUT_TOGGLE = document.getElementById('layout-toggle');
         const LAYOUT_ICON = document.getElementById('layout-icon');
+        const FIND_INPUT = document.getElementById('find-input');
+        const OPT_BODY = document.getElementById('opt-body');
+
         const HTML_ELEMENT = document.documentElement;
 
         // Select first node in the hidden root initially
@@ -1655,6 +1660,7 @@
             setupResizerHandlers();
             setupWindowHandlers();
             setupToggleHandlers();
+            setupFindPaneHandlers();
         }
 
         function setupOutlinePaneHandlers() {
@@ -1689,6 +1695,21 @@
         function setupToggleHandlers() {
             THEME_TOGGLE.addEventListener('click', handleThemeToggleClick);
             LAYOUT_TOGGLE.addEventListener('click', handleLayoutToggleClick);
+        }
+
+        function setupFindPaneHandlers() {
+            FIND_INPUT.addEventListener('keydown', function (e) {
+                if (e.key === 'Tab' && e.shiftKey) {
+                    e.preventDefault();
+                    OPT_BODY.focus();
+                }
+            });
+            OPT_BODY.addEventListener('keydown', function (e) {
+                if (e.key === 'Tab' && !e.shiftKey) {
+                    e.preventDefault();
+                    FIND_INPUT.focus();
+                }
+            });
         }
 
         // Event handler implementations
