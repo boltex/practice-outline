@@ -684,7 +684,7 @@
 <body>
     <!--
       * Layout *
-      The main body is split in two (outline-find-container and body-pane) by by the main-resizer.
+      The body element is split in two (outline-find-container and body-pane) by the main-resizer.
       The outline-find-container is split in two (outline-pane and find-pane) by the secondary-resizer.
       So in total, there are three panes and two resizers. The rest are just floating buttons which are not part of the layout.
     -->
@@ -744,7 +744,7 @@
             id="toggle-icon">🌓</span></button>
     <button id="layout-toggle" class="action-button" aria-label="Toggle layout orientation"><span
             id="layout-icon">📐</span></button>
-    <button id="dehoist-btn" class="action-button" aria-label="De-hoist" title="De-hoist">
+    <button id="dehoist-btn" class="action-button" aria-label="De-hoist" title="De-hoist" disabled>
         <span class="svg-icon" id="dehoist-icon">
             <svg width="20" height="20" viewBox="0 0 17 17">
                 <path
@@ -762,14 +762,14 @@
             </svg>
         </span>
     </button>
-    <button id="next-btn" class="action-button" aria-label="Goto Next" title="Goto Next">
+    <button id="next-btn" class="action-button" aria-label="Goto Next" title="Goto Next" disabled>
         <span class="svg-icon" id="next-icon">
             <svg width="20" height="20" viewBox="0 0 20 20">
                 <polygon points="14,10 6,3 6,17" fill="#494" />
             </svg>
         </span>
     </button>
-    <button id="prev-btn" class="action-button" aria-label="Goto Previous" title="Goto Previous">
+    <button id="prev-btn" class="action-button" aria-label="Goto Previous" title="Goto Previous" disabled>
         <span class="svg-icon" id="prev-icon">
             <svg width="20" height="20" viewBox="0 0 20 20">
                 <polygon points="6,10 14,3 14,17" fill="#494" />
