@@ -1602,6 +1602,12 @@
             const startIndex = Math.floor(scrollTop / ROW_HEIGHT);
             const visibleCount = Math.ceil(viewportHeight / ROW_HEIGHT) + 1;
             const endIndex = Math.min(flatRows.length, startIndex + visibleCount);
+            let leftOffset = LEFT_OFFSET;
+
+            // If all nodes have no children, remove the left offset
+            if (flatRows.every(row => !row.hasChildren)) {
+                leftOffset = 0;
+            }
 
             SPACER.innerHTML = "";
             SPACER.style.height = flatRows.length * ROW_HEIGHT + "px";
@@ -1623,7 +1629,7 @@
                 div.style.top = (i * ROW_HEIGHT) + "px";
                 div.style.height = ROW_HEIGHT + "px";
 
-                const leftPosition = (row.depth * 20) + LEFT_OFFSET;
+                const leftPosition = (row.depth * 20) + leftOffset;
                 div.style.left = leftPosition + "px";
                 div.style.width = (viewportWidth - leftPosition) + "px";
 
