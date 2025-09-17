@@ -6,7 +6,7 @@
     <title>Virtualised Tree</title>
     <style>
         :root {
-            /* -------------------------------------- Light theme (default) */
+            /* light theme (default) */
             --background-color: #ffffec;
             --body-pane-color: #fff6f5;
             --find-pane-color: #f9f9f9;
@@ -17,46 +17,35 @@
             --focus-outline: #0000ff;
             --text-color: #000000;
             --caret-dim-color: #888;
-            /* -------------------------------------- vertical layout (default) */
-            /* body contains both outline-find-container, main splitter and body-pane */
+            --find-text-color: #444;
+            --find-placeholder-color: #888;
+            --find-border-color: #ccc;
+            --find-selection: #0078d7;
+            /* vertical layout (default) */
             --main-direction: row;
-
             --main-resizer-width: 5px;
             --main-resizer-height: 100%;
             --main-resizer-cursor: ew-resize;
-
             --main-resizer-extension-width: 5px;
             --main-resizer-extension-height: 100%;
-
             --main-resizer-before-top: unset;
             --main-resizer-before-left: -5px;
             --main-resizer-after-right: -5px;
             --main-resizer-after-bottom: unset;
-
-            /* outline-find-container contains outline-pane, secondary splitter and find-pane */
             --secondary-direction: column;
             --secondary-height: 100%;
-
             --secondary-resizer-width: 100%;
             --secondary-resizer-height: 5px;
             --secondary-resizer-cursor: ns-resize;
-
             --secondary-resizer-extension-width: 100%;
             --secondary-resizer-extension-height: 5px;
-
             --secondary-resizer-before-top: -5px;
             --secondary-resizer-before-left: unset;
             --secondary-resizer-after-right: unset;
             --secondary-resizer-after-bottom: -5px;
-            /* -------------------------------------- find pane */
-            --find-text-color: #444;
-            --find-placeholder-color: #888;
-            --find-selection: #0078d7;
-
         }
 
         [data-theme="dark"] {
-            /* Dark theme */
             --background-color: #1e1e2e;
             --body-pane-color: #2a2536;
             --find-pane-color: #23202e;
@@ -69,38 +58,28 @@
             --caret-dim-color: #999;
             --find-text-color: #aeb6d1;
             --find-placeholder-color: #50597a;
-            --find-selection: #5c6ace;
-
+            --find-border-color: #3f445e;
+            --find-selection: #3c54ce;
         }
 
         [data-layout="horizontal"] {
-            /* horizontal layout */
-            /* body contains both outline-find-container, main splitter and body-pane */
             --main-direction: column;
-
             --main-resizer-width: 100%;
             --main-resizer-height: 5px;
             --main-resizer-cursor: ns-resize;
-
             --main-resizer-extension-width: 100%;
             --main-resizer-extension-height: 5px;
-
             --main-resizer-before-top: -5px;
             --main-resizer-before-left: unset;
             --main-resizer-after-right: unset;
             --main-resizer-after-bottom: -5px;
-
-            /* outline-find-container contains outline-pane, secondary splitter and find-pane */
             --secondary-direction: row;
             --secondary-height: 100%;
-
             --secondary-resizer-width: 5px;
             --secondary-resizer-height: 100%;
             --secondary-resizer-cursor: ew-resize;
-
             --secondary-resizer-extension-width: 5px;
             --secondary-resizer-extension-height: 100%;
-
             --secondary-resizer-before-top: unset;
             --secondary-resizer-before-left: -5px;
             --secondary-resizer-after-right: -5px;
@@ -296,7 +275,7 @@
         #body-pane:focus-visible {
             /* 
               Note: Outline will appear under the items positioned absolutely.
-              see pseudo-elements with "z-index: -1" that appear below this outline.
+              See pseudo-elements with "z-index: -1" that appear below this outline.
              */
             outline: 3px solid var(--focus-outline);
             outline-offset: -3px;
@@ -512,18 +491,6 @@
             flex-wrap: wrap;
         }
 
-        #find-pane #find-input {
-            width: 100%;
-            box-sizing: border-box;
-            padding: 0.4rem 0.5rem;
-            margin: 0;
-            border-radius: 4px;
-            border: 1px solid rgba(0, 0, 0, 0.12);
-            background: transparent;
-            color: var(--find-text-color);
-            font-family: sans-serif;
-        }
-
         #find-pane .find-col {
             display: flex;
             flex-direction: column;
@@ -541,12 +508,10 @@
             color: var(--find-text-color);
         }
 
-        /* Make the radio column visually grouped and slightly indented */
         #find-pane .find-col.radios label {
             padding-left: 0.1rem;
         }
 
-        /* Compact inputs */
         #find-pane input[type="checkbox"],
         #find-pane input[type="radio"] {
             width: 16px;
@@ -554,7 +519,7 @@
             margin: 0;
         }
 
-        #find-pane #find-input {
+        #find-input {
             width: 100%;
             box-sizing: border-box;
             padding: 0.4rem 0.5rem;
@@ -614,6 +579,24 @@
             border-radius: 50%;
         }
 
+        input[type="radio"]:focus:checked::after,
+        input[type="radio"]:focus-visible:checked::after {
+            background-color: var(--find-selection);
+        }
+
+        input[type="checkbox"]:focus:checked::after,
+        input[type="checkbox"]:focus-visible:checked::after {
+            border: solid var(--find-selection);
+            border-width: 0 2px 2px 0;
+        }
+
+        #find-pane input:focus,
+        #find-pane input:focus-visible {
+            border-color: var(--find-selection);
+            outline: 2px solid var(--find-selection);
+            outline-offset: -1px;
+        }
+
         #toast {
             position: fixed;
             top: 16px;
@@ -652,11 +635,10 @@
         <div id="outline-pane" tabindex="0"></div>
         <div id="secondary-resizer"></div>
         <div id="find-pane">
-
             <div class="find-controls" role="region" aria-label="Find options">
                 <input id="find-input" type="text" autocomplete="off" placeholder="&lt;find pattern here&gt;"
                     aria-label="Find pattern">
-                <div class="find-col checkboxes" aria-hidden="false">
+                <div class="find-col checkboxes" aria-label="Search options">
                     <label for="opt-whole">
                         <input id="opt-whole" type="checkbox" name="find-option" />
                         Whole Word
@@ -674,7 +656,6 @@
                         Mark Finds
                     </label>
                 </div>
-
                 <div class="find-col radios" role="radiogroup" aria-label="Search scope">
                     <label for="scope-entire">
                         <input id="scope-entire" type="radio" name="find-scope" value="entire" checked />
@@ -696,10 +677,8 @@
                         <input id="opt-body" type="checkbox" name="find-target" checked />
                         Search Body
                     </label>
-
                 </div>
             </div>
-
         </div>
     </div>
     <div id="main-resizer"></div>
