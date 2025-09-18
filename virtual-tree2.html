@@ -964,7 +964,7 @@
         buildParentRefs(tree);
 
         const expanded = new Set(); // No need to add the root because 'isExpanded' will return true for it
-        const marked = new Set(); // Set of nodes (not gnx) that are marked
+        const marked = new Set(); // Set of gnx (not nodes) that are marked
         let selectedNode = null; // Track the currently selected node
         let currentTheme = 'light'; // Default theme
         let currentLayout = 'vertical'; // Default layout
@@ -1408,21 +1408,19 @@
 
         function toggleMark(node) {
             if (!node) return;
-            if (marked.has(node)) {
-                marked.delete(node);
-                if (data[node.gnx]) {
-                    data[node.gnx].icon = (data[node.gnx].icon || 0) & ~2; // Clear marked bit
-                }
+            const gnx = node.gnx;
+            if (marked.has(gnx)) {
+                marked.delete(gnx);
+                if (data[gnx]) data[gnx].icon = (data[gnx].icon || 0) & ~2; // Clear marked bit
             } else {
-                marked.add(node);
-                if (data[node.gnx]) {
-                    data[node.gnx].icon = (data[node.gnx].icon || 0) | 2; // Set marked bit
-                }
+                marked.add(gnx);
+                if (data[gnx]) data[gnx].icon = (data[gnx].icon || 0) | 2; // Set marked bit
             }
             // Only need to redraw the affected node if visible, no need to re-flatten because structure didn't change
             if (isVisible(node)) {
                 renderTree();
             }
+            debouncedSaveMarkedNodes();
         }
 
         // -------------------------------------- Hoist button
@@ -1897,6 +1895,51 @@
             updateOutlinePaneSize();
         }
 
+        function saveMarkedNodesToLocalStorage() {
+            const markedArray = Array.from(marked);
+            const dataToSave = {
+                marked: markedArray
+            };
+            safeLocalStorageSet(title, JSON.stringify(dataToSave));
+        }
+
+        const debouncedSaveMarkedNodes = (function () {
+            let timeout = null;
+            return function () {
+                if (timeout) {
+                    clearTimeout(timeout);
+                }
+                timeout = setTimeout(function () {
+                    saveMarkedNodesToLocalStorage();
+                    timeout = null;
+                }, 750); // 750ms debounce time
+            };
+        })();
+
+        function loadMarkedNodesFromLocalStorage() {
+            const savedData = safeLocalStorageGet(title);
+            if (savedData) {
+                try {
+                    const parsedData = JSON.parse(savedData);
+                    if (parsedData && Array.isArray(parsedData.marked)) {
+                        // Clear current marked set
+                        marked.clear();
+
+                        // Add saved gnx values to the set
+                        parsedData.marked.forEach(gnx => {
+                            marked.add(gnx);
+                            // Update icon state to reflect marked status
+                            if (data[gnx]) {
+                                data[gnx].icon = (data[gnx].icon || 0) | 2; // Set marked bit
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.error('Error loading marked nodes from localStorage:', e);
+                }
+            }
+        }
+
         const getCurrentTheme = () => {
             const savedTheme = safeLocalStorageGet('theme');
             if (savedTheme) {
@@ -2127,6 +2170,7 @@
         }
 
         function handleDOMContentLoaded() {
+            loadMarkedNodesFromLocalStorage();
             selectAndOrToggleAndRedraw(tree.children[0]); // Select first real node
             applyLayout(getCurrentLayout());
             applyTheme(getCurrentTheme());
