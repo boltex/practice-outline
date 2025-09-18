@@ -43,6 +43,24 @@
             --secondary-resizer-before-left: unset;
             --secondary-resizer-after-right: unset;
             --secondary-resizer-after-bottom: -5px;
+            /* transitions */
+            --body-transition: unset;
+            --body-pane-transition: unset;
+            --find-pane-transition: unset;
+            /* configuration/find pane visibility */
+            --config-display: none;
+            --find-display: flex;
+        }
+
+        [data-show-config="true"] {
+            --config-display: flex;
+            --find-display: none;
+        }
+
+        [data-transition="true"] {
+            --body-transition: color 0.15s ease, background-color 0.15s ease;
+            --body-pane-transition: color 0.3s ease, background-color 0.3s ease;
+            --find-pane-transition: color 0.15s ease, background-color 0.15s ease;
         }
 
         [data-theme="dark"] {
@@ -157,10 +175,7 @@
             height: 100vh;
             background-color: var(--background-color);
             color: var(--text-color);
-        }
-
-        [data-transition="true"] body {
-            transition: color 0.15s ease, background-color 0.15s ease;
+            transition: var(--body-transition)
         }
 
         body.dragging-main {
@@ -282,14 +297,6 @@
             flex: 1 1 0;
         }
 
-        #find-pane {
-            background-color: var(--find-pane-color);
-        }
-
-        [data-transition="true"] #find-pane {
-            transition: color 0.15s ease, background-color 0.15s ease;
-        }
-
         #body-pane {
             flex: 1;
             padding: 1rem 0 0 1rem;
@@ -297,10 +304,7 @@
             overflow-y: auto;
             font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
             white-space: pre-wrap;
-        }
-
-        [data-transition="true"] #body-pane {
-            transition: color 0.3s ease, background-color 0.3s ease;
+            transition: var(--body-pane-transition);
         }
 
         #outline-pane:focus,
@@ -592,16 +596,27 @@
         /* find pane */
         #find-pane {
             padding: 0.5rem 0.5rem 0 0.5rem;
-            overflow-x: hidden
+            overflow-x: hidden;
+            background-color: var(--find-pane-color);
+            position: relative;
+            transition: var(--find-pane-transition);
         }
 
-        #find-controls {
+        #find-controls,
+        #config-controls {
             font-family: sans-serif;
-            display: flex;
             gap: 0.5rem;
             padding-top: 0.5rem;
             align-items: flex-start;
             flex-wrap: wrap;
+        }
+
+        #find-controls {
+            display: var(--find-display);
+        }
+
+        #config-controls {
+            display: var(--config-display);
         }
 
         #find-pane .find-col {
@@ -643,6 +658,7 @@
             background: transparent;
             color: var(--find-text-color);
             font-family: sans-serif;
+            display: var(--find-display)
         }
 
         #find-input::placeholder {
@@ -709,6 +725,22 @@
             border-color: var(--find-selection);
             outline: 2px solid var(--find-selection);
             outline-offset: -1px;
+        }
+
+        .config-button {
+            position: absolute;
+            bottom: 10px;
+            z-index: 100;
+            cursor: pointer;
+            font-size: 20px;
+            opacity: 0.6;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            right: 10px;
+        }
+
+        .config-button:hover {
+            transform: scale(1.2);
+            opacity: 1;
         }
 
         /* toast */
@@ -804,6 +836,8 @@
                     </label>
                 </div>
             </div>
+            <span id="config-btn" class="config-button" aria-label="Configuration" title="Configuration">⚙️</span>
+
         </div>
     </div>
     <div id="main-resizer"></div>
@@ -848,7 +882,7 @@
         title="Go to Next Marked Node" disabled>
         <span class="svg-icon" id="next-marked-icon">
             <svg width="20" height="20" viewBox="0 0 20 20">
-                <polygon points="14,10 6,3 6,17" fill="#9b1919" />
+                <polygon points="14,10 6,3 6,17" fill="#cb1919" />
             </svg>
         </span>
     </button>
@@ -857,7 +891,7 @@
             <svg width="20" height="20" viewBox="1.5 1 13 13">
                 <path
                     d="m 5.0855,2.17 c -0.532,0 -0.73,0.196 -0.73,0.728 v 10.933 l 3.645,-2.253 3.644,2.253 V 2.898 c 0,-0.532 -0.197,-0.729 -0.463,-0.7285 z m 3.906,4.088 0.525,1.574 -0.146,0.124 -1.37,-0.976 -1.37,0.976 -0.146,-0.124 0.525,-1.574 -1.356,-0.991 0.066,-0.168 1.676,-0.022 0.51,-1.574 h 0.182 l 0.51,1.574 1.677,0.022 0.08813,0.129125 z"
-                    style="fill:#9b1919;" />
+                    style="fill:#cb1919;" />
             </svg>
         </span>
     </button>
@@ -865,7 +899,7 @@
         title="Go to Previous Marked Node" disabled>
         <span class="svg-icon" id="prev-marked-icon">
             <svg width="20" height="20" viewBox="0 0 20 20">
-                <polygon points="6,10 14,3 14,17" fill="#9b1919" />
+                <polygon points="6,10 14,3 14,17" fill="#cb1919" />
             </svg>
         </span>
     </button>
@@ -1075,7 +1109,7 @@
 
         const FIND_INPUT = document.getElementById('find-input');
         const OPT_BODY = document.getElementById('opt-body');
-
+        const CONFIG_BTN = document.getElementById('config-btn');
         const HTML_ELEMENT = document.documentElement;
 
         // -------------------------------------- Navigation helpers
@@ -1620,6 +1654,15 @@
                 // Navigate to the node without adding to history
                 selectAndOrToggleAndRedraw(node);
                 updateHistoryButtonStates();
+            }
+        }
+
+        // -------------------------------------- Configuration
+        function toggleConfiguration() {
+            if (HTML_ELEMENT.getAttribute('data-show-config') === 'true') {
+                HTML_ELEMENT.setAttribute('data-show-config', 'false');
+            } else {
+                HTML_ELEMENT.setAttribute('data-show-config', 'true');
             }
         }
 
@@ -2169,6 +2212,7 @@
             TOGGLE_MARK_BTN.addEventListener('click', toggleMarkCurrentNode);
             NEXT_MARKED_BTN.addEventListener('click', gotoNextMarkedNode);
             PREV_MARKED_BTN.addEventListener('click', gotoPrevMarkedNode);
+            CONFIG_BTN.addEventListener('click', toggleConfiguration);
         }
 
         function setupFindPaneHandlers() {
