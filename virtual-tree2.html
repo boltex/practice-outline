@@ -1667,15 +1667,29 @@
         };
 
         function collapseAll() {
-            // Collapse all nodes in outline and select the proper top-level node
-            expanded.clear();
-
-            let node = selectedNode;
-            // hasParent already excludes the hidden root node
-            while (node && hasParent(node)) {
-                node = moveToParent(node);
+            // Collapse all nodes in visible outline and select the proper top-level node
+            const currentRoot = getCurrentRoot();
+            if (currentRoot === tree) {
+                expanded.clear();
+            } else {
+                const nodesToRemove = [];
+                expanded.forEach(node => {
+                    if (node === currentRoot || isAncestorOf(currentRoot, node)) {
+                        nodesToRemove.push(node);
+                    }
+                });
+                nodesToRemove.forEach(node => expanded.delete(node));
             }
-            if (node) selectAndOrToggleAndRedraw(node);
+            if (hoistStack.length > 0) {
+                selectAndOrToggleAndRedraw(currentRoot);
+            } else {
+                let node = selectedNode;
+                // If currently selected node is a descendant of a top-level node, find that top-level node
+                while (node && hasParent(node) && node.parent !== tree) {
+                    node = moveToParent(node);
+                }
+                if (node) selectAndOrToggleAndRedraw(node);
+            }
         };
 
         function toggleSelected() {
