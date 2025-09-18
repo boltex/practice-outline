@@ -506,7 +506,7 @@
             position: relative;
             top: 0;
             left: 0;
-            transition: top 0.3s ease, left 0.3s ease;
+            transition: top 0.3s ease, left 0.3s ease, transform 0.3s ease;
         }
 
         #dehoist-btn:active #dehoist-icon {
@@ -563,6 +563,30 @@
         .action-button:disabled:active #prev-icon,
         .action-button:disabled:active #next-icon {
             left: 0 !important;
+        }
+
+        #toggle-mark-btn {
+            right: 260px;
+        }
+
+        #next-marked-btn {
+            right: 300px;
+        }
+
+        #prev-marked-btn {
+            right: 340px;
+        }
+
+        #toggle-mark-btn:active #toggle-mark-icon {
+            transform: scale(0.7);
+        }
+
+        #prev-marked-btn:active #prev-marked-icon {
+            left: -10px;
+        }
+
+        #next-marked-btn:active #next-marked-icon {
+            left: 10px;
         }
 
         /* find pane */
@@ -820,6 +844,32 @@
             </svg>
         </span>
     </button>
+    <button id="toggle-mark-btn" class="action-button" aria-label="Toggle Mark" title="Toggle Mark">
+        <span class="svg-icon" id="toggle-mark-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20">
+                <path d="M10 3.5L12.5 8.5L18 9.5L14 13.5L15 19L10 16.5L5 19L6 13.5L2 9.5L7.5 8.5L10 3.5Z"
+                    style="fill:var(--find-text-color);" />
+            </svg>
+        </span>
+    </button>
+    <button id="next-marked-btn" class="action-button" aria-label="Go to Next Marked Node"
+        title="Go to Next Marked Node" disabled>
+        <span class="svg-icon" id="next-marked-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20">
+                <polygon points="14,10 6,3 6,17" fill="#494" />
+                <circle cx="15" cy="10" r="4" fill="#f55" />
+            </svg>
+        </span>
+    </button>
+    <button id="prev-marked-btn" class="action-button" aria-label="Go to Previous Marked Node"
+        title="Go to Previous Marked Node" disabled>
+        <span class="svg-icon" id="prev-marked-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20">
+                <polygon points="6,10 14,3 14,17" fill="#494" />
+                <circle cx="5" cy="10" r="4" fill="#f55" />
+            </svg>
+        </span>
+    </button>
     <div id="toast" role="status" aria-live="polite" hidden></div>
     <script>
         const title = "Virtual Tree View Demo 2"; // Also used as key for localstorage save/restore of expanded and marked sets.
@@ -999,6 +1049,10 @@
         const HOIST_BTN = document.getElementById('hoist-btn');
         const NEXT_BTN = document.getElementById('next-btn');
         const PREV_BTN = document.getElementById('prev-btn');
+
+        const TOGGLE_MARK_BTN = document.getElementById('toggle-mark-btn');
+        const NEXT_MARKED_BTN = document.getElementById('next-marked-btn');
+        const PREV_MARKED_BTN = document.getElementById('prev-marked-btn');
 
         const FIND_INPUT = document.getElementById('find-input');
         const OPT_BODY = document.getElementById('opt-body');
@@ -1416,11 +1470,32 @@
                 marked.add(gnx);
                 if (data[gnx]) data[gnx].icon = (data[gnx].icon || 0) | 2; // Set marked bit
             }
+            updateMarkedButtonStates();
             // Only need to redraw the affected node if visible, no need to re-flatten because structure didn't change
             if (isVisible(node)) {
                 renderTree();
             }
             debouncedSaveMarkedNodes();
+        }
+
+        function toggleMarkCurrentNode() {
+            if (selectedNode) {
+                toggleMark(selectedNode);
+            }
+        }
+
+        function gotoNextMarkedNode() {
+            showToast('Going to next marked node - not yet implemented', 1500);
+        }
+
+        function gotoPrevMarkedNode() {
+            showToast('Going to previous marked node - not yet implemented', 1500);
+        }
+
+        function updateMarkedButtonStates() {
+            const hasMarkedNodes = marked.size > 0;
+            NEXT_MARKED_BTN.disabled = !hasMarkedNodes;
+            PREV_MARKED_BTN.disabled = !hasMarkedNodes;
         }
 
         // -------------------------------------- Hoist button
@@ -2022,6 +2097,9 @@
             DEHOIST_BTN.addEventListener('click', dehoistNode);
             PREV_BTN.addEventListener('click', previousHistory);
             NEXT_BTN.addEventListener('click', nextHistory);
+            TOGGLE_MARK_BTN.addEventListener('click', toggleMarkCurrentNode);
+            NEXT_MARKED_BTN.addEventListener('click', gotoNextMarkedNode);
+            PREV_MARKED_BTN.addEventListener('click', gotoPrevMarkedNode);
         }
 
         function setupFindPaneHandlers() {
@@ -2153,7 +2231,7 @@
             } else if (e.key.toLowerCase() === 'm' && e.ctrlKey && !e.altKey && !e.metaKey) {
                 e.preventDefault();
                 if (selectedNode && selectedNode.gnx) {
-                    toggleMark(selectedNode);
+                    toggleMarkCurrentNode();
                 }
             } else if (e.key === 'F2') {
                 e.preventDefault();
@@ -2218,6 +2296,7 @@
                 secondaryRatio = savedOutlineFindRatio;
             }
 
+            updateMarkedButtonStates();
             updatePanelSizes();
             setupEventHandlers();
             renderTree();
