@@ -319,10 +319,6 @@
             outline-offset: -3px;
         }
 
-        .node-text {
-            position: relative;
-        }
-
         .node-text:hover::before,
         .selected>.node-text::before,
         .ancestor>.node-text::before {
@@ -378,6 +374,7 @@
         }
 
         .node-text {
+            position: relative;
             background-repeat: no-repeat;
             background-position-x: 2px;
             background-position-y: 1px;
@@ -387,6 +384,13 @@
             padding: 2px 0 2px 26px;
             margin-right: 1.2rem;
             border-radius: 4px;
+        }
+
+        /* Special handling for node icons */
+        [data-show-icons="false"] .node-text {
+            background-image: none !important;
+            padding-left: 4px !important;
+            /* Reduce padding when icons are hidden */
         }
 
         .caret::after {
@@ -592,6 +596,11 @@
         #next-marked-btn:active #next-marked-icon {
             left: 10px;
         }
+
+        .hidden-button {
+            display: none !important;
+        }
+
 
         /* find pane */
         #find-pane {
@@ -892,7 +901,7 @@
                         Mark/Unmark
                     </label>
                     <label for="show-prev-next-history">
-                        <input id="show-prev-next-history" type="checkbox" name="config-option" />
+                        <input id="show-prev-next-history" type="checkbox" name="config-option" checked />
                         Goto Previous/Next History
                     </label>
                     <label for="show-hoist-dehoist">
@@ -900,19 +909,19 @@
                         Hoist/De-hoist
                     </label>
                     <label for="show-layout-orientation">
-                        <input id="show-layout-orientation" type="checkbox" name="config-option" />
+                        <input id="show-layout-orientation" type="checkbox" name="config-option" checked />
                         Layout Orientation
                     </label>
                     <label for="show-theme-toggle">
-                        <input id="show-theme-toggle" type="checkbox" name="config-option" />
+                        <input id="show-theme-toggle" type="checkbox" name="config-option" checked />
                         Dark/Light Theme
                     </label>
                     <label for="show-node-icons">
-                        <input id="show-node-icons" type="checkbox" name="config-option" />
+                        <input id="show-node-icons" type="checkbox" name="config-option" checked />
                         Node Icons
                     </label>
                     <label for="show-collapse-all">
-                        <input id="show-collapse-all" type="checkbox" name="config-option" />
+                        <input id="show-collapse-all" type="checkbox" name="config-option" checked />
                         Collapse All
                     </label>
                     <!-- Future options: -->
@@ -2266,6 +2275,7 @@
             setupWindowHandlers();
             setupButtonHandlers();
             setupFindPaneHandlers();
+            setupConfigCheckboxes();
         }
 
         function setupOutlinePaneHandlers() {
@@ -2509,6 +2519,88 @@
             updatePanelSizes();
             setupEventHandlers();
             renderTree();
+        }
+        // Handle configuration checkboxes
+        function setupConfigCheckboxes() {
+            SHOW_PREV_NEXT_MARK.addEventListener('change', updateButtonVisibility);
+            SHOW_TOGGLE_MARK.addEventListener('change', updateButtonVisibility);
+            SHOW_PREV_NEXT_HISTORY.addEventListener('change', updateButtonVisibility);
+            SHOW_HOIST_DEHOIST.addEventListener('change', updateButtonVisibility);
+            SHOW_LAYOUT_ORIENTATION.addEventListener('change', updateButtonVisibility);
+            SHOW_THEME_TOGGLE.addEventListener('change', updateButtonVisibility);
+            SHOW_NODE_ICONS.addEventListener('change', updateNodeIcons);
+            SHOW_COLLAPSE_ALL.addEventListener('change', updateButtonVisibility);
+            loadConfigPreferences();
+        }
+
+        function updateButtonVisibility() {
+            toggleButtonVisibility(NEXT_MARKED_BTN, PREV_MARKED_BTN, SHOW_PREV_NEXT_MARK.checked);
+            toggleButtonVisibility(TOGGLE_MARK_BTN, null, SHOW_TOGGLE_MARK.checked);
+            toggleButtonVisibility(NEXT_BTN, PREV_BTN, SHOW_PREV_NEXT_HISTORY.checked);
+            toggleButtonVisibility(HOIST_BTN, DEHOIST_BTN, SHOW_HOIST_DEHOIST.checked);
+            toggleButtonVisibility(LAYOUT_TOGGLE, null, SHOW_LAYOUT_ORIENTATION.checked);
+            toggleButtonVisibility(THEME_TOGGLE, null, SHOW_THEME_TOGGLE.checked);
+            toggleButtonVisibility(COLLAPSE_ALL_BTN, null, SHOW_COLLAPSE_ALL.checked);
+            saveConfigPreferences();
+        }
+
+        function updateNodeIcons() {
+            HTML_ELEMENT.setAttribute('data-show-icons', SHOW_NODE_ICONS.checked ? 'true' : 'false');
+            renderTree(); // Re-render to apply icon changes
+            saveConfigPreferences();
+        }
+
+        function toggleButtonVisibility(button1, button2, isVisible) {
+            if (button1) {
+                button1.classList.toggle('hidden-button', !isVisible);
+            }
+            if (button2) {
+                button2.classList.toggle('hidden-button', !isVisible);
+            }
+        }
+
+        function saveConfigPreferences() {
+            const preferences = {
+                showPrevNextMark: SHOW_PREV_NEXT_MARK.checked,
+                showToggleMark: SHOW_TOGGLE_MARK.checked,
+                showPrevNextHistory: SHOW_PREV_NEXT_HISTORY.checked,
+                showHoistDehoist: SHOW_HOIST_DEHOIST.checked,
+                showLayoutOrientation: SHOW_LAYOUT_ORIENTATION.checked,
+                showThemeToggle: SHOW_THEME_TOGGLE.checked,
+                showNodeIcons: SHOW_NODE_ICONS.checked,
+                showCollapseAll: SHOW_COLLAPSE_ALL.checked
+            };
+
+            safeLocalStorageSet('configPreferences', JSON.stringify(preferences));
+        }
+
+        function loadConfigPreferences() {
+            const savedPrefs = safeLocalStorageGet('configPreferences');
+            if (savedPrefs) {
+                try {
+                    const prefs = JSON.parse(savedPrefs);
+
+                    // Set checkbox states
+                    SHOW_PREV_NEXT_MARK.checked = prefs.showPrevNextMark ?? false;
+                    SHOW_TOGGLE_MARK.checked = prefs.showToggleMark ?? false;
+                    SHOW_PREV_NEXT_HISTORY.checked = prefs.showPrevNextHistory ?? true;
+                    SHOW_HOIST_DEHOIST.checked = prefs.showHoistDehoist ?? false;
+                    SHOW_LAYOUT_ORIENTATION.checked = prefs.showLayoutOrientation ?? true;
+                    SHOW_THEME_TOGGLE.checked = prefs.showThemeToggle ?? true;
+                    SHOW_NODE_ICONS.checked = prefs.showNodeIcons ?? true;
+                    SHOW_COLLAPSE_ALL.checked = prefs.showCollapseAll ?? true;
+
+                    // Apply current states
+                    updateButtonVisibility();
+                    updateNodeIcons();
+                } catch (e) {
+                    console.error('Error loading config preferences:', e);
+                }
+            } else {
+                // Set defaults and apply them
+                updateButtonVisibility();
+                updateNodeIcons();
+            }
         }
 
         // ----------------- Toast helper -----------------
