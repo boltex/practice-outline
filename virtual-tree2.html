@@ -970,11 +970,11 @@
     <div id="main-resizer"></div>
     <div id="body-pane" tabindex="0" contenteditable="plaintext-only"></div>
     <div id="button-container">
-        <button id="theme-toggle" class="action-button" aria-label="Toggle dark/light mode"><span
+        <button tabindex="-1" id="theme-toggle" class="action-button" aria-label="Toggle dark/light mode"><span
                 id="toggle-icon">🌓</span></button>
-        <button id="layout-toggle" class="action-button" aria-label="Toggle layout orientation"><span
+        <button tabindex="-1" id="layout-toggle" class="action-button" aria-label="Toggle layout orientation"><span
                 id="layout-icon">📐</span></button>
-        <button id="dehoist-btn" class="action-button" aria-label="De-hoist" title="De-hoist" disabled>
+        <button tabindex="-1" id="dehoist-btn" class="action-button" aria-label="De-hoist" title="De-hoist" disabled>
             <span class="svg-icon" id="dehoist-icon">
                 <svg width="20" height="20" viewBox="0 0 17 17">
                     <path
@@ -983,7 +983,7 @@
                 </svg>
             </span>
         </button>
-        <button id="hoist-btn" class="action-button" aria-label="Hoist" title="Hoist">
+        <button tabindex="-1" id="hoist-btn" class="action-button" aria-label="Hoist" title="Hoist">
             <span class="svg-icon" id="hoist-icon">
                 <svg width="20" height="20" viewBox="0 0 17 17">
                     <path
@@ -992,21 +992,22 @@
                 </svg>
             </span>
         </button>
-        <button id="next-btn" class="action-button" aria-label="Goto Next" title="Goto Next" disabled>
+        <button tabindex="-1" id="next-btn" class="action-button" aria-label="Goto Next" title="Goto Next" disabled>
             <span class="svg-icon" id="next-icon">
                 <svg width="20" height="20" viewBox="0 0 20 20">
                     <polygon points="14,10 6,3 6,17" fill="#494" />
                 </svg>
             </span>
         </button>
-        <button id="prev-btn" class="action-button" aria-label="Goto Previous" title="Goto Previous" disabled>
+        <button tabindex="-1" id="prev-btn" class="action-button" aria-label="Goto Previous" title="Goto Previous"
+            disabled>
             <span class="svg-icon" id="prev-icon">
                 <svg width="20" height="20" viewBox="0 0 20 20">
                     <polygon points="6,10 14,3 14,17" fill="#494" />
                 </svg>
             </span>
         </button>
-        <button id="next-marked-btn" class="action-button" aria-label="Go to Next Marked Node"
+        <button tabindex="-1" id="next-marked-btn" class="action-button" aria-label="Go to Next Marked Node"
             title="Go to Next Marked Node" disabled>
             <span class="svg-icon" id="next-marked-icon">
                 <svg width="20" height="20" viewBox="0 0 20 20">
@@ -1014,7 +1015,7 @@
                 </svg>
             </span>
         </button>
-        <button id="toggle-mark-btn" class="action-button" aria-label="Toggle Mark" title="Toggle Mark">
+        <button tabindex="-1" id="toggle-mark-btn" class="action-button" aria-label="Toggle Mark" title="Toggle Mark">
             <span class="svg-icon" id="toggle-mark-icon">
                 <svg width="20" height="20" viewBox="1.5 1 13 13">
                     <path
@@ -1023,7 +1024,7 @@
                 </svg>
             </span>
         </button>
-        <button id="prev-marked-btn" class="action-button" aria-label="Go to Previous Marked Node"
+        <button tabindex="-1" id="prev-marked-btn" class="action-button" aria-label="Go to Previous Marked Node"
             title="Go to Previous Marked Node" disabled>
             <span class="svg-icon" id="prev-marked-icon">
                 <svg width="20" height="20" viewBox="0 0 20 20">
@@ -1134,18 +1135,16 @@
         // Note: Also use buildClones and buildParentRefs
         // to add icon member to data entries as needed:
         // hasBody: 1, isMarked: 2, isClone: 4, isDirty: 8
-
-        let visitedNodes = {}; // Keys are gnx, values are node references
         let allNodesInOrder = []; // Store all nodes in natural tree order (initialized after tree is built)
 
         // Build clones when repeated in the tree
         function buildClones(node) {
+            const visitedNodes = {}; // Keys are gnx, values are node references
             const gnx = node && node.gnx;
             // Initialize data entry safely if it exists
             if (gnx != null && data[gnx]) {
                 if (!('icon' in data[gnx])) data[gnx].icon = 0;
             }
-
             if (gnx != null && Object.prototype.hasOwnProperty.call(visitedNodes, gnx)) {
                 // If we've already seen this node, fill its children with JSON stringify/parse for deep copy.
                 node.children = JSON.parse(JSON.stringify(visitedNodes[gnx].children || []));
@@ -1204,7 +1203,6 @@
         let mainRatio = 0.25; // Default proportion between outline-find-container and body-pane widths (defaults to 1/4)
         let secondaryIsDragging = false;
         let secondaryRatio = 0.75; // Default proportion between the outline-pane and the find-pane (defaults to 3/4)
-
         const navigationHistory = [];
         let currentHistoryIndex = -1; // -1 means no history yet
         const hoistStack = []; // Track hoisted nodes
@@ -2408,7 +2406,15 @@
             });
         }
 
-        // Event handler implementations
+        function setupButtonFocusPrevention() {
+            const actionButtons = document.querySelectorAll('.action-button');
+            actionButtons.forEach(button => {
+                button.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                });
+            });
+        }
+
         function handleOutlinePaneMouseDown(e) {
             if (e.detail === 2) e.preventDefault();
         }
@@ -2576,7 +2582,6 @@
             showToast('Find-Previous functionality not yet implemented', 1500);
         }
 
-        // Modified initialization function to call the setup
         function initializeLayout() {
             document.title = title; // Set the document title
             const savedOutlineBodyRatio = getSavedMainRatio();
@@ -2592,9 +2597,10 @@
             updateMarkedButtonStates();
             updatePanelSizes();
             setupEventHandlers();
+            setupButtonFocusPrevention();
             renderTree();
         }
-        // Handle configuration checkboxes
+
         function setupConfigCheckboxes() {
             SHOW_PREV_NEXT_MARK.addEventListener('change', updateButtonVisibility);
             SHOW_TOGGLE_MARK.addEventListener('change', updateButtonVisibility);
