@@ -452,8 +452,8 @@
         /* buttons */
         #button-container {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: 12px;
+            right: 12px;
             display: flex;
             flex-direction: row-reverse;
             gap: 8px;
@@ -1497,36 +1497,22 @@
             // If selected node is already hoisted, do nothing
             if (hoistStack.length > 0 && hoistStack[hoistStack.length - 1] === selectedNode) return;
 
-            // Can't hoist the root node (though it should never be selected anyway)
-            if (!selectedNode.parent) return;
+            if (!selectedNode.parent) return; // root node (though it should never be selected anyway)
 
-            // Push the selected node onto the hoist stack
             hoistStack.push(selectedNode);
-
-            // If collapsed, expand it
             if (hasChildren(selectedNode) && !isExpanded(selectedNode)) {
                 expanded.add(selectedNode);
                 selectedNode.toggled = true; // Mark as toggled
             }
-
-            // Update UI
             updateHoistButtonStates();
-
-            // Re-flatten and render the tree
             flatRows = flattenTree(getCurrentRoot(), 0, false);
             renderTree();
         }
 
         function dehoistNode() {
             if (hoistStack.length === 0) return;
-
-            // Pop the top node from the hoist stack
             const previousHoist = hoistStack.pop();
-
-            // Select the node that was hoisted
             selectAndOrToggleAndRedraw(previousHoist);
-
-            // Update UI
             updateHoistButtonStates();
         }
 
@@ -1801,10 +1787,9 @@
         }
 
         function addToHistory(node) {
-            // Don't add if same as current position
             if (navigationHistory.length > 0 &&
                 navigationHistory[currentHistoryIndex] === node) {
-                return;
+                return; // Already the current node, do nothing
             }
 
             // If we're not at the end, truncate the forward history
@@ -1812,11 +1797,9 @@
                 navigationHistory.splice(currentHistoryIndex + 1);
             }
 
-            // Add the new position
             navigationHistory.push(node);
             currentHistoryIndex = navigationHistory.length - 1;
 
-            // Update button states
             updateHistoryButtonStates();
         }
 
@@ -1842,7 +1825,6 @@
             }
         }
 
-        // -------------------------------------- Configuration
         function toggleConfiguration() {
             if (HTML_ELEMENT.getAttribute('data-show-config') === 'true') {
                 HTML_ELEMENT.setAttribute('data-show-config', 'false');
@@ -2090,7 +2072,6 @@
         function updateOutlineContainerSize() {
             if (currentLayout === 'vertical') {
                 let newWidth = window.innerWidth * mainRatio;
-                // Respect minimum width
                 if (newWidth < minWidth) {
                     newWidth = minWidth;
                 }
@@ -2098,7 +2079,6 @@
                 OUTLINE_FIND_CONTAINER.style.height = `100%`;
             } else {
                 let newHeight = window.innerHeight * mainRatio;
-                // Respect minimum height
                 if (newHeight < minWidth) {
                     newHeight = minWidth;
                 }
@@ -2284,7 +2264,7 @@
                 timeout = setTimeout(function () {
                     saveMarkedNodesToLocalStorage();
                     timeout = null;
-                }, 750); // 750ms debounce time
+                }, 500); // 500ms debounce time
             };
         })();
 
@@ -2358,6 +2338,10 @@
             setupConfigCheckboxes();
         }
 
+        function preventDefault(e) {
+            e.preventDefault(); // Utility function used in setupBodyPaneHandlers
+        }
+
         function setupOutlinePaneHandlers() {
             // Prevent text selection on double-click
             OUTLINE_PANE.addEventListener("mousedown", handleOutlinePaneMouseDown);
@@ -2369,10 +2353,8 @@
 
         function setupBodyPaneHandlers() {
             BODY_PANE.addEventListener('keydown', handleBodyPaneKeyDown);
-
-            // Block all text changes
-            BODY_PANE.addEventListener("beforeinput", preventDefault);
-            BODY_PANE.addEventListener("paste", preventDefault);
+            BODY_PANE.addEventListener("beforeinput", preventDefault); // Block text changes
+            BODY_PANE.addEventListener("paste", preventDefault); // Block text changes
         }
 
         function setupResizerHandlers() {
@@ -2582,11 +2564,6 @@
             applyLayout(newLayout);
         }
 
-        // Utility functions
-        function preventDefault(e) {
-            e.preventDefault();
-        }
-
         // Find functionality
         function findNext() {
             showToast('Find-Next functionality not yet implemented', 1500);
@@ -2600,14 +2577,12 @@
             document.title = title; // Set the document title
             const savedOutlineBodyRatio = getSavedMainRatio();
             const savedOutlineFindRatio = getSavedSecondaryRatio();
-
             if (savedOutlineBodyRatio != null) {
                 mainRatio = savedOutlineBodyRatio;
             }
             if (savedOutlineFindRatio != null) {
                 secondaryRatio = savedOutlineFindRatio;
             }
-
             updateMarkedButtonStates();
             updatePanelSizes();
             setupEventHandlers();
@@ -2664,7 +2639,6 @@
                 showNodeIcons: SHOW_NODE_ICONS.checked,
                 showCollapseAll: SHOW_COLLAPSE_ALL.checked
             };
-
             safeLocalStorageSet('configPreferences', JSON.stringify(preferences));
         }
 
@@ -2673,8 +2647,6 @@
             if (savedPrefs) {
                 try {
                     const prefs = JSON.parse(savedPrefs);
-
-                    // Set checkbox states
                     SHOW_PREV_NEXT_MARK.checked = prefs.showPrevNextMark ?? false;
                     SHOW_TOGGLE_MARK.checked = prefs.showToggleMark ?? false;
                     SHOW_PREV_NEXT_HISTORY.checked = prefs.showPrevNextHistory ?? true;
@@ -2683,15 +2655,12 @@
                     SHOW_THEME_TOGGLE.checked = prefs.showThemeToggle ?? true;
                     SHOW_NODE_ICONS.checked = prefs.showNodeIcons ?? true;
                     SHOW_COLLAPSE_ALL.checked = prefs.showCollapseAll ?? true;
-
-                    // Apply current states
                     updateButtonVisibility();
                     updateNodeIcons();
                 } catch (e) {
                     console.error('Error loading config preferences:', e);
                 }
             } else {
-                // Set defaults and apply them
                 updateButtonVisibility();
                 updateNodeIcons();
             }
@@ -2712,7 +2681,6 @@
             }
             __toastTimer = setTimeout(() => {
                 t.classList.remove('show');
-                // hide after transition completes
                 setTimeout(() => { t.hidden = true; }, 220);
                 __toastTimer = null;
             }, duration);
