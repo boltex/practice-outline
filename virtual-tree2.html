@@ -615,7 +615,6 @@
         #find-controls,
         #config-controls {
             gap: 0.5rem;
-            padding-top: 0.5rem;
             align-items: flex-start;
             flex-wrap: wrap;
         }
@@ -625,10 +624,12 @@
         }
 
         #find-controls {
+            padding-top: 0.5rem;
             display: var(--find-display);
         }
 
         #config-controls {
+            padding-top: 0;
             display: var(--config-display);
         }
 
@@ -636,14 +637,56 @@
             width: 100%;
             text-align: center;
             font-weight: bold;
-            margin-top: 0;
-            margin-bottom: 0.25rem;
+            margin: 0;
             font-size: 1em;
             color: var(--find-text-color);
         }
 
         .config-title svg {
             vertical-align: middle;
+        }
+
+        .sub-title {
+            width: 100%;
+            text-align: center;
+            margin: 0;
+            color: var(--caret-dim-color);
+            font-style: italic;
+            font-size: 0.9em;
+        }
+
+        #find-pane .config-col.shortcuts {
+            list-style: none;
+            padding: 0;
+            margin: -5px 0 0 0;
+            font-size: 0.8em;
+            color: var(--find-text-color);
+            gap: 0;
+        }
+
+        #find-pane .config-col.shortcuts li {
+            padding: 0.25rem 0.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        #find-pane .config-col.shortcuts kbd {
+            display: inline-block;
+            padding: 0.1rem 0.4rem;
+            margin: 0 0.2rem;
+            font-family: monospace;
+            font-size: 0.9em;
+            line-height: 1.4;
+            color: var(--text-color);
+            background-color: var(--resizer-color);
+            border: 1px solid var(--find-border-color);
+            border-radius: 3px;
+            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+        }
+
+        .kbd-spacer {
+            display: inline-block;
+            width: 80px;
         }
 
         #find-pane .find-col,
@@ -890,7 +933,8 @@
                             d="M4.487 3.186c-.11.182-.05.382.062.533.094.125.222.226.36.298.222.11.36.162.484-.062.151-.264.091-.52-.112-.72-.23-.204-.581-.277-.794-.05zm7 .26c-.326.03-.478.33-.472.633a.91.91 0 00.162.385c.247-.037.604-.197.769-.36.093-.133.21-.369.149-.509-.152-.191-.403-.18-.608-.149z"
                             fill="#fff" />
                     </svg>
-                    Leo Viewer Configuration</span>
+                    Leo Outline Viewer </span>
+                <span class="sub-title">Visible Controls</span>
                 <div class="config-col" aria-label="Config options">
                     <label for="show-prev-next-mark">
                         <input id="show-prev-next-mark" type="checkbox" name="config-option" />
@@ -930,7 +974,13 @@
                         Chapters
                     </label> -->
                 </div>
-
+                <span class="sub-title">Keyboard Shortcuts</span>
+                <ul class="config-col shortcuts">
+                    <li><span class="kbd-spacer"><kbd>Ctrl</kbd>+<kbd>F</kbd></span> — Find…</li>
+                    <li><span class="kbd-spacer"><kbd>F2</kbd>/<kbd>F3</kbd></span> — Previous/Next Match</li>
+                    <li><span class="kbd-spacer"><kbd>Ctrl</kbd>+<kbd>M</kbd></span> — Mark Node</li>
+                    <li><span class="kbd-spacer"><kbd>Alt</kbd>+<kbd>-</kbd></span> — Collapse All</li>
+                </ul>
             </div>
 
         </div>
