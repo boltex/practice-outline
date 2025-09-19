@@ -2892,8 +2892,9 @@
 
                 const currentFocus = findFocus();
 
-                // If focused in body, check body first then headline
+                // Key changes here: Handle focus location differently
                 if (currentFocus === 2 && searchInBody && body) {
+                    // If focused in body, check body first
                     const limitedBody = body.substring(0, bodyOffset);
                     const match = findLastMatch(limitedBody);
 
@@ -2907,14 +2908,13 @@
                     }
                 }
 
-                // Check headline if appropriate
-                if (searchInHeadlines && headString && (!searchInBody || bodyOffset === 0)) {
+                // Check headline if focused in outline or after body check didn't find anything
+                if (searchInHeadlines && headString) {
                     const limitedHeadline = currentFocus === 1 ? headString.substring(0, headlineOffset) : headString;
                     const match = findLastMatch(limitedHeadline);
-                    console.log('findPrevious: headline match', match, 'in', limitedHeadline);
+
                     if (match) {
                         if (markFind) {
-                            console.log('TRYING TO MARK', node.gnx);
                             if (!marked.has(node.gnx)) {
                                 marked.add(node.gnx);
                                 if (data[node.gnx]) {
@@ -2932,8 +2932,8 @@
                     }
                 }
 
-                // If still in current node and focused in headline, check body as last resort
-                if (currentFocus === 1 && searchInBody && body) {
+                // Only check current node's body if NOT focused in outline pane
+                if (currentFocus !== 1 && searchInBody && body) {
                     const match = findLastMatch(body);
 
                     if (match) {
