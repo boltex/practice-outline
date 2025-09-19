@@ -348,7 +348,8 @@
 
         .node-text:hover::before,
         .selected>.node-text::before,
-        .ancestor>.node-text::before {
+        .ancestor>.node-text::before,
+        .initial-find>.node-text::before {
             content: "";
             position: absolute;
             top: 0;
@@ -370,6 +371,11 @@
 
         .node-text:hover::before {
             background-color: var(--hover-bg);
+        }
+
+        .initial-find>.node-text::before {
+            border: 1.5px solid var(--find-selection);
+            border-style: dotted;
         }
 
         .node {
@@ -1228,10 +1234,12 @@
         buildParentRefs(tree);
         allNodesInOrder = getAllNodesInTreeOrder(tree); // Initialize the global array once
 
+
         let flatRows = null; // Array of nodes currently visible in the outline pane, null at init time to not trigger render
         const expanded = new Set(); // No need to add the root because 'isExpanded' will return true for it
         const marked = new Set(); // Set of gnx (not nodes) that are marked
         let selectedNode = null; // Track the currently selected node
+        let initialFindNode = null; // Node where to start the find (null means from the top)
         let currentTheme = 'light'; // Default theme
         let currentLayout = 'vertical'; // Default layout
         let isDragging = false;
@@ -2039,6 +2047,15 @@
             SPACER.innerHTML = "";
             SPACER.style.height = flatRows.length * ROW_HEIGHT + "px";
 
+            let selectedRadioValue = ''; // Falsy for now
+            const selectedRadio = document.querySelector(`input[name="find-scope"]:checked`);
+            if (selectedRadio) {
+                selectedRadioValue = selectedRadio.value;
+            }
+
+            const searchSuboutline = selectedRadioValue === 'suboutline' && initialFindNode; // Will contain the node or null
+            const searchNodeOnly = selectedRadioValue === 'node'; // selected node only
+
             for (let i = startIndex; i < endIndex; i++) {
                 const row = flatRows[i];
                 const div = document.createElement("div");
@@ -2051,6 +2068,14 @@
                     div.classList.add("selected");
                 } else if (selectedNode && isAncestorOf(row.node, selectedNode)) {
                     div.classList.add("ancestor");
+                }
+
+                if (searchNodeOnly && row.node === selectedNode) {
+                    div.classList.add("initial-find");
+                }
+
+                if (searchSuboutline && (row.node === searchSuboutline || isAncestorOf(searchSuboutline, row.node))) {
+                    div.classList.add("initial-find");
                 }
 
                 div.style.top = (i * ROW_HEIGHT) + "px";
@@ -2306,6 +2331,9 @@
         }
 
         function saveDocumentStateToLocalStorage() {
+            // Save the current configuration preferences
+            saveConfigPreferences();
+
             // Use the allNodesInOrder tree, the full list from the top as if all nodes were expanded,
             // to note the position of hoisted node(s), expanded node(s), and the currently selected node.
             let hoistStackPositions = []; // empty means no hoist
@@ -2491,6 +2519,13 @@
                     FIND_INPUT.focus();
                 }
             });
+            const findScopeRadios = document.querySelectorAll('input[name="find-scope"]');
+            findScopeRadios.forEach(radio => {
+                radio.addEventListener('change', function () {
+                    initialFindNode = null; // Reset initial find node when scope changes
+                    renderTree(); // Re-render to update node highlighting
+                });
+            });
         }
 
         function setupButtonFocusPrevention() {
@@ -2590,6 +2625,7 @@
             }
             FIND_INPUT.focus();
             FIND_INPUT.select();
+            renderTree(); // To show or remove initial-find highlight
         }
 
         // Global key handlers (work anywhere)
@@ -3121,13 +3157,11 @@
             toggleButtonVisibility(LAYOUT_TOGGLE, null, SHOW_LAYOUT_ORIENTATION.checked);
             toggleButtonVisibility(THEME_TOGGLE, null, SHOW_THEME_TOGGLE.checked);
             toggleButtonVisibility(COLLAPSE_ALL_BTN, null, SHOW_COLLAPSE_ALL.checked);
-            saveConfigPreferences();
         }
 
         function updateNodeIcons() {
             HTML_ELEMENT.setAttribute('data-show-icons', SHOW_NODE_ICONS.checked ? 'true' : 'false');
             renderTree(); // Re-render to apply icon changes
-            saveConfigPreferences();
         }
 
         function toggleButtonVisibility(button1, button2, isVisible) {
@@ -3140,6 +3174,8 @@
         }
 
         function saveConfigPreferences() {
+            const selectedFindScope = document.querySelector('input[name="find-scope"]:checked')?.value || 'entire';
+
             const preferences = {
                 showPrevNextMark: SHOW_PREV_NEXT_MARK.checked,
                 showToggleMark: SHOW_TOGGLE_MARK.checked,
@@ -3148,7 +3184,15 @@
                 showLayoutOrientation: SHOW_LAYOUT_ORIENTATION.checked,
                 showThemeToggle: SHOW_THEME_TOGGLE.checked,
                 showNodeIcons: SHOW_NODE_ICONS.checked,
-                showCollapseAll: SHOW_COLLAPSE_ALL.checked
+                showCollapseAll: SHOW_COLLAPSE_ALL.checked,
+                // Find-pane options
+                findWholeWord: OPT_WHOLE.checked,
+                findIgnoreCase: OPT_IGNORECASE.checked,
+                findRegexp: OPT_REGEXP.checked,
+                findMark: OPT_MARK.checked,
+                findHeadline: OPT_HEADLINE.checked,
+                findBody: OPT_BODY.checked,
+                findScope: selectedFindScope
             };
             safeLocalStorageSet('configPreferences', JSON.stringify(preferences));
         }
@@ -3166,6 +3210,21 @@
                     SHOW_THEME_TOGGLE.checked = prefs.showThemeToggle ?? true;
                     SHOW_NODE_ICONS.checked = prefs.showNodeIcons ?? true;
                     SHOW_COLLAPSE_ALL.checked = prefs.showCollapseAll ?? true;
+
+                    // Find-pane options
+                    if (prefs.findWholeWord !== undefined) OPT_WHOLE.checked = prefs.findWholeWord;
+                    if (prefs.findIgnoreCase !== undefined) OPT_IGNORECASE.checked = prefs.findIgnoreCase;
+                    if (prefs.findRegexp !== undefined) OPT_REGEXP.checked = prefs.findRegexp;
+                    if (prefs.findMark !== undefined) OPT_MARK.checked = prefs.findMark;
+                    if (prefs.findHeadline !== undefined) OPT_HEADLINE.checked = prefs.findHeadline;
+                    if (prefs.findBody !== undefined) OPT_BODY.checked = prefs.findBody;
+
+                    // Set the find scope radio
+                    if (prefs.findScope) {
+                        const scopeRadio = document.getElementById('scope-' + prefs.findScope);
+                        if (scopeRadio) scopeRadio.checked = true;
+                    }
+
                     updateButtonVisibility();
                     updateNodeIcons();
                 } catch (e) {
