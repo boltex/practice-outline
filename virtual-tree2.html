@@ -951,7 +951,7 @@
                         <input id="show-collapse-all" type="checkbox" name="config-option" checked />
                         Collapse All
                     </label>
-                    <!-- Future options: -->
+                    <!-- Future possible options: -->
                     <!-- <label for="show-chapters">
                         <input id="show-chapters" type="checkbox" name="config-option" />
                         Chapters
@@ -1140,29 +1140,35 @@
 
         // Build clones when repeated in the tree
         function buildClones(node) {
+
             const visitedNodes = {}; // Keys are gnx, values are node references
-            const gnx = node && node.gnx;
-            // Initialize data entry safely if it exists
-            if (gnx != null && data[gnx]) {
-                if (!('icon' in data[gnx])) data[gnx].icon = 0;
-            }
-            if (gnx != null && Object.prototype.hasOwnProperty.call(visitedNodes, gnx)) {
-                // If we've already seen this node, fill its children with JSON stringify/parse for deep copy.
-                node.children = JSON.parse(JSON.stringify(visitedNodes[gnx].children || []));
-                if (data[gnx]) data[gnx].icon = (data[gnx].icon || 0) | 4; // set clone bit
-                // Do not recurse into children, they are already built
-            } else {
-                if (gnx != null && data[gnx] && data[gnx].bodyString) {
-                    data[gnx].icon = (data[gnx].icon || 0) | 1; // set hasBody bit
+
+            // Helper function for recursion that has access to the visitedNodes object
+            function buildClonesWithChildren(node) {
+                const gnx = node && node.gnx;
+                // Initialize data entry safely if it exists
+                if (gnx != null && data[gnx]) {
+                    if (!('icon' in data[gnx])) data[gnx].icon = 0;
                 }
-                visitedNodes[gnx] = node;
-                if (node.children) {
-                    for (const child of node.children) {
-                        buildClones(child);
+                if (gnx != null && Object.prototype.hasOwnProperty.call(visitedNodes, gnx)) {
+                    // If we've already seen this node, fill its children with JSON stringify/parse for deep copy.
+                    node.children = JSON.parse(JSON.stringify(visitedNodes[gnx].children || []));
+                    if (data[gnx]) data[gnx].icon = (data[gnx].icon || 0) | 4; // set clone bit
+                    // Do not recurse into children, they are already built
+                } else {
+                    if (gnx != null && data[gnx] && data[gnx].bodyString) {
+                        data[gnx].icon = (data[gnx].icon || 0) | 1; // set hasBody bit
+                    }
+                    visitedNodes[gnx] = node;
+                    if (node.children) {
+                        for (const child of node.children) {
+                            buildClonesWithChildren(child);
+                        }
                     }
                 }
             }
-        };
+            buildClonesWithChildren(node); // Start the recursive process
+        }
 
         // Add parent references to all nodes recursively
         function buildParentRefs(node, parent = null) {
@@ -1195,6 +1201,7 @@
         buildParentRefs(tree);
         allNodesInOrder = getAllNodesInTreeOrder(tree); // Initialize the global array once
 
+        let flatRows = null; // Array of nodes currently visible in the outline pane, null at init time to not trigger render
         const expanded = new Set(); // No need to add the root because 'isExpanded' will return true for it
         const marked = new Set(); // Set of gnx (not nodes) that are marked
         let selectedNode = null; // Track the currently selected node
@@ -1495,7 +1502,7 @@
         function hoistNode() {
             if (!selectedNode) return;
 
-            // If selected node is already hoisted, do nothing
+            // If selected node is already hoisted: no-op (Even if button should be disabled in that case)
             if (hoistStack.length > 0 && hoistStack[hoistStack.length - 1] === selectedNode) return;
 
             if (!selectedNode.parent) return; // root node (though it should never be selected anyway)
@@ -1775,8 +1782,9 @@
         // -------------------------------------- Hoist button
         function updateHoistButtonStates() {
             // Update hoist/dehoist button states
+            const isCurrentlyHoisted = hoistStack.length > 0 && hoistStack[hoistStack.length - 1] === selectedNode;
             DEHOIST_BTN.disabled = hoistStack.length === 0;
-            HOIST_BTN.disabled = !selectedNode || !hasChildren(selectedNode);
+            HOIST_BTN.disabled = !selectedNode || !hasChildren(selectedNode) || isCurrentlyHoisted;
         }
 
         // -------------------------------------- History
@@ -1840,6 +1848,10 @@
         }
 
         function flattenTree(node, depth = 0, isRoot = true) {
+            // This only flattens the tree structure into an array of rows for rendering.
+            // It check for expansion state to include children as needed because only expanded nodes' children are visible.
+            // The isRoot parameter indicates if this node is the hidden root node (not visible).
+
             let rows = [];
 
             // Only add non-root nodes to the rows
@@ -1966,6 +1978,8 @@
         }
 
         function renderTree() {
+            if (!flatRows) return; // Not initialized yet
+
             // Render visible rows only
             const scrollTop = OUTLINE_PANE.scrollTop;
             const viewportHeight = OUTLINE_PANE.clientHeight;
@@ -2151,7 +2165,7 @@
 
         function updateSecondaryProportion() {
             if (currentLayout === 'vertical') {
-                secondaryRatio = OUTLINE_PANE.offsetHeight / OUTLINE_FIND_CONTAINER.offsetHeight;
+                secondaryRatio = (OUTLINE_PANE.offsetHeight - 6) / OUTLINE_FIND_CONTAINER.offsetHeight;
             } else {
                 secondaryRatio = OUTLINE_PANE.offsetWidth / OUTLINE_FIND_CONTAINER.offsetWidth;
             }
@@ -2248,25 +2262,55 @@
         }
 
         function saveDocumentStateToLocalStorage() {
+
             // TODO: Save more state if needed (selected node, hoist stack, expanded nodes, etc.)
             // but all as relative number positions from the top of a flattened tree to avoid gnx issues
+
+            // start by making a flattened tree from the hidden root, not just the possible hoisted node
+            // (we will note the position of the hoisted node if any in that list, and the selected node too)
+            // That list will also be used to note the positions of the expanded nodes. On load will restore
+            // the hoist stack, selected node and expanded nodes from those positions. (although it will not restore
+            // expanded nodes inside collapsed nodes, but that is an intended approximation)
+
+            const flatRowsFromRoot = flattenTree(tree, 0, true);
+            let hoistStackPositions = []; // empty means no hoist
+            let selectedPosition = -1; // -1 means no selection
+            const expandedPositions = [];
+
+            for (let i = 0; i < flatRowsFromRoot.length; i++) {
+                if (hoistStack.length > 0 && hoistStack.indexOf(flatRowsFromRoot[i].node) !== -1) {
+                    hoistStackPositions.push(i); // Is part of the hoist stack
+                }
+                if (flatRowsFromRoot[i].node === selectedNode) {
+                    selectedPosition = i; // Got the selected node position.
+                }
+                if (isExpanded(flatRowsFromRoot[i].node)) {
+                    expandedPositions.push(i);
+                }
+            }
+
+            // Note marked are the gnx keys, not numeric positions from the flat list
             const markedArray = Array.from(marked);
             const dataToSave = {
-                marked: markedArray
+                marked: markedArray,
+                hoistStack: hoistStackPositions,
+                selected: selectedPosition,
+                expanded: expandedPositions
             };
             safeLocalStorageSet(title, JSON.stringify(dataToSave));
         }
 
-        function loadMarkedNodesFromLocalStorage() {
+        function loadDocumentStateFromLocalStorage() {
+            // returns the selected node if found, otherwise null
+            let initialSelectedNode = null;
             const savedData = safeLocalStorageGet(title);
             if (savedData) {
                 try {
                     const parsedData = JSON.parse(savedData);
-                    if (parsedData && Array.isArray(parsedData.marked)) {
-                        // Clear current marked set
-                        marked.clear();
 
-                        // Add saved gnx values to the set
+                    // Start by rebuilding marked set and their related node icons
+                    if (parsedData && Array.isArray(parsedData.marked)) {
+                        marked.clear();
                         parsedData.marked.forEach(gnx => {
                             marked.add(gnx);
                             // Update icon state to reflect marked status
@@ -2275,8 +2319,49 @@
                             }
                         });
                     }
+
+                    if (parsedData && Array.isArray(parsedData.expanded) && Array.isArray(parsedData.hoistStack) && typeof parsedData.selected === 'number') {
+                        const expandedPositions = parsedData.expanded; // Numbered positions as you go along from hidden root's first child, and expanding as you go.
+                        let expandedPositionsIndex = 0; // Index in the expandedPositions array
+                        const hoistPositions = parsedData.hoistStack; // Numbered positions as you go along from hidden root's first child, and expanding as you go.
+                        const selectedPosition = parsedData.selected; // Numbered position that will match at some point in the flattened list built as we expand nodes
+
+                        // Start from the hidden root, building a temporary flattened list as we go, skip children if position not the next expanded position at expandedPositions[expandedPositionsIndex]
+                        // (increment expandedPositionsIndex as we match positions)
+                        expanded.clear();
+                        let atPosition = -1; // start at -1 to count children correctly
+                        let hoistNode = null;
+
+                        const doChildren = (node) => {
+                            if (node.children) {
+                                for (const child of node.children) {
+                                    atPosition++;
+                                    // Check if this position is in the hoist stack positions
+                                    if (hoistPositions.indexOf(atPosition) !== -1) {
+                                        hoistNode = child; // This node is part of the hoist stack
+                                        hoistStack.push(hoistNode);
+                                    }
+                                    // Check if this position matches the selected position
+                                    if (atPosition === selectedPosition) {
+                                        initialSelectedNode = child;
+                                    }
+                                    // Check if this position is in the expanded positions (this will increment atPosition as we go!)
+                                    if (expandedPositionsIndex < expandedPositions.length && expandedPositions[expandedPositionsIndex] === atPosition) {
+                                        expanded.add(child);
+                                        expandedPositionsIndex++;
+                                        doChildren(child); // Recurse into children
+                                    }
+                                }
+                            }
+                        };
+
+                        doChildren(tree);
+
+                    }
+                    return initialSelectedNode;
+
                 } catch (e) {
-                    console.error('Error loading marked nodes from localStorage:', e);
+                    console.error('Error loading document state from localStorage:', e);
                 }
             }
         }
@@ -2313,7 +2398,9 @@
             }
             // Proportions will have changed so we must update sizes
             updatePanelSizes();
-            renderTree();
+            if (flatRows) {
+                renderTree();
+            }
         };
 
         // Setup and organize all event handlers
@@ -2469,13 +2556,6 @@
         };
 
         function handleOutlinePaneKeyDown(e) {
-            // Special case for Alt key combinations
-            if (e.key === '-' && e.altKey && !e.ctrlKey && !e.metaKey) {
-                e.preventDefault();
-                collapseAll();
-                return;
-            }
-
             const handler = outlinePaneKeyMap[e.key];
             if (handler && !e.ctrlKey && !e.altKey && !e.metaKey) {
                 e.preventDefault();
@@ -2483,21 +2563,10 @@
             }
         }
 
-        // Body pane key mapping
-        const bodyPaneKeyMap = {
-            'Tab': (e) => { e.preventDefault(); OUTLINE_PANE.focus(); },
-            'ArrowUp': (e) => { if (e.altKey) { e.preventDefault(); OUTLINE_PANE.focus(); selectVisBack(); } },
-            'ArrowDown': (e) => { if (e.altKey) { e.preventDefault(); OUTLINE_PANE.focus(); selectVisNext(); } },
-            'ArrowLeft': (e) => { if (e.altKey) { e.preventDefault(); OUTLINE_PANE.focus(); contractNodeOrGoToParent(); } },
-            'ArrowRight': (e) => { if (e.altKey) { e.preventDefault(); OUTLINE_PANE.focus(); expandNodeAndGoToFirstChild(); } }
-        };
-
         function handleBodyPaneKeyDown(e) {
-            const handler = bodyPaneKeyMap[e.key];
-            if (handler) {
-                // arrows are allowed to move cursor in body pane if no alt key:
-                // so do not preventDefault in that case. Only do so if alt key is pressed.
-                handler(e);
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                OUTLINE_PANE.focus();
             }
         }
 
@@ -2524,6 +2593,33 @@
             } else if (e.key === 'F3') {
                 e.preventDefault();
                 findNext();
+            } else if (e.key === '-' && e.altKey && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                collapseAll();
+            } else if (e.altKey && !e.ctrlKey && !e.metaKey) {
+                // Handle Alt+Arrow keys globally
+                switch (e.key) {
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        OUTLINE_PANE.focus();
+                        selectVisBack();
+                        break;
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        OUTLINE_PANE.focus();
+                        selectVisNext();
+                        break;
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        OUTLINE_PANE.focus();
+                        contractNodeOrGoToParent();
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        OUTLINE_PANE.focus();
+                        expandNodeAndGoToFirstChild();
+                        break;
+                }
             }
         }
 
@@ -2533,11 +2629,18 @@
         }
 
         function handleDOMContentLoaded() {
-            loadMarkedNodesFromLocalStorage();
-            selectAndOrToggleAndRedraw(tree.children[0]); // Select first real node
-            applyLayout(getCurrentLayout());
-            applyTheme(getCurrentTheme());
-            initializeLayout();
+            const initialSelectedNode = loadDocumentStateFromLocalStorage();
+            if (!initialSelectedNode) {
+                selectAndOrToggleAndRedraw(tree.children[0]);
+            } else {
+                selectAndOrToggleAndRedraw(initialSelectedNode); // sets selectedNode
+                if (data[selectedNode.gnx]) {
+                    BODY_PANE.textContent = data[selectedNode.gnx].bodyString || "";
+                }
+            }
+            // selectAndOrToggleAndRedraw sets flatRows, so we can now render it
+            renderTree();
+            scrollSelectedNodeIntoView();
         }
 
         function handleThemeToggleClick() {
@@ -2574,10 +2677,9 @@
                 secondaryRatio = savedOutlineFindRatio;
             }
             updateMarkedButtonStates();
-            updatePanelSizes();
+            updateHoistButtonStates();
             setupEventHandlers();
             setupButtonFocusPrevention();
-            renderTree();
         }
 
         function setupConfigCheckboxes() {
@@ -2676,6 +2778,10 @@
             }, duration);
         }
 
+        // Apply theme & layout before anything else to avoid flash of wrong theme
+        applyTheme(getCurrentTheme());
+        initializeLayout(); // gets ratios from localStorage and applies layout and theme
+        applyLayout(getCurrentLayout()); // flatRows will be null at this point so no render.
         // Start everything once DOM is loaded
         window.addEventListener('DOMContentLoaded', handleDOMContentLoaded);
 
