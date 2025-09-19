@@ -2668,6 +2668,16 @@
             showToast('Find-Previous functionality not yet implemented', 1500);
         }
 
+        function findFocus() {
+            // Returns 1 if focus in outline-pane, 2 if in body-pane, 0 otherwise
+            if (document.activeElement === OUTLINE_PANE || OUTLINE_PANE.contains(document.activeElement)) {
+                return 1;
+            } else if (document.activeElement === BODY_PANE || BODY_PANE.contains(document.activeElement)) {
+                return 2;
+            }
+            return 0;
+        }
+
         function initializeLayout() {
             document.title = title; // Set the document title
             const savedOutlineBodyRatio = getSavedMainRatio();
