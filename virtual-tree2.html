@@ -1274,6 +1274,10 @@
         const FIND_INPUT = document.getElementById('find-input');
         const OPT_HEADLINE = document.getElementById('opt-headline');
         const OPT_BODY = document.getElementById('opt-body');
+        const OPT_WHOLE = document.getElementById('opt-whole');
+        const OPT_IGNORECASE = document.getElementById('opt-ignorecase');
+        const OPT_REGEXP = document.getElementById('opt-regexp');
+        const OPT_MARK = document.getElementById('opt-mark');
         const CONFIG_BTN = document.getElementById('config-btn');
 
         const SHOW_PREV_NEXT_MARK = document.getElementById('show-prev-next-mark');
@@ -1285,6 +1289,7 @@
         const SHOW_NODE_ICONS = document.getElementById('show-node-icons');
         const SHOW_COLLAPSE_ALL = document.getElementById('show-collapse-all');
 
+        const TOAST = document.getElementById('toast');
         const HTML_ELEMENT = document.documentElement;
 
         // * Navigation helpers
@@ -2677,9 +2682,10 @@
 
             const searchInBody = OPT_BODY.checked;
             const searchInHeadlines = OPT_HEADLINE.checked;
-            const ignoreCase = document.getElementById('opt-ignorecase').checked;
-            const isRegexp = document.getElementById('opt-regexp').checked;
-            const wholeWord = document.getElementById('opt-whole').checked;
+            const ignoreCase = OPT_IGNORECASE.checked;
+            const isRegexp = OPT_REGEXP.checked;
+            const wholeWord = OPT_WHOLE.checked;
+            const markFind = OPT_MARK.checked;
 
             if (!searchInBody && !searchInHeadlines) {
                 showToast('not searching headline or body', 2000);
@@ -2707,14 +2713,39 @@
 
                 while (currentIndex < totalNodes) {
                     const node = allNodesInOrder[currentIndex];
-                    const headString = data[node.gnx]?.headString || "";
-                    const body = data[node.gnx]?.bodyString || "";
+                    let headString = data[node.gnx]?.headString || "";
+                    let body = data[node.gnx]?.bodyString || "";
 
-                    if (searchInHeadlines) {
+                    // If searching headlines, check there first, but skip if the focus in in the body pane and its the currently selected node
+                    if (searchInHeadlines && headString && !(node === selectedNode && findFocus() === 2)) {
                         regex.lastIndex = 0; // Reset regex state
+                        let startOffset = 0;
+                        // If this is the currently selected node, check for current selection range existing in selectedLabelElement with getSelection()
+                        // and only search after that range. Keep that offset, if any, and apply it to the match index later.
+                        if (node === selectedNode && selectedLabelElement) {
+                            const selection = window.getSelection();
+                            if (selection.rangeCount > 0) {
+                                const range = selection.getRangeAt(0);
+                                if (selectedLabelElement.contains(range.commonAncestorContainer)) {
+                                    // Selection is inside the headline span
+                                    startOffset = range.endOffset;
+                                    headString = headString.substring(startOffset);
+                                }
+                            }
+                        }
+
                         const match = regex.exec(headString);
 
                         if (match) {
+                            // If 'mark find' is checked, mark the found node if not already marked
+                            if (markFind.checked) {
+                                if (!marked.has(node.gnx)) {
+                                    marked.add(node.gnx);
+                                    if (data[node.gnx]) {
+                                        data[node.gnx].icon = (data[node.gnx].icon || 0) | 2; // Set marked bit
+                                    }
+                                }
+                            }
                             selectAndOrToggleAndRedraw(node); // This also calls scrollSelectedNodeIntoView
 
                             // Focus outline pane and highlight match
@@ -2724,7 +2755,7 @@
 
                             // Highlight the match in the headline using selectedLabelElement
                             setTimeout(() => {
-                                highlightMatchInHeadline(match.index, match.index + match[0].length);
+                                highlightMatchInHeadline(match.index + startOffset, match.index + startOffset + match[0].length);
                             });
 
                             return;
@@ -2733,6 +2764,22 @@
 
                     if (searchInBody && body) {
                         regex.lastIndex = 0; // Reset regex state
+
+                        // If this is the currently selected node, check for current selection range existing in BODY_PANE with getSelection()
+                        // and only search after that range. Keep that offset, if any, and apply it to the match index later.
+                        let startOffset = 0;
+                        if (node === selectedNode && BODY_PANE) {
+                            const selection = window.getSelection();
+                            if (selection.rangeCount > 0) {
+                                const range = selection.getRangeAt(0);
+                                if (BODY_PANE.contains(range.commonAncestorContainer)) {
+                                    // Selection is inside the body pane
+                                    startOffset = range.endOffset;
+                                    body = body.substring(startOffset);
+                                }
+                            }
+                        }
+
                         const match = regex.exec(body);
                         if (match) {
                             selectAndOrToggleAndRedraw(node); // This also calls scrollSelectedNodeIntoView
@@ -2740,7 +2787,7 @@
                                 BODY_PANE.focus();
                             }
                             setTimeout(() => {
-                                highlightMatchInBody(match.index, match.index + match[0].length);
+                                highlightMatchInBody(match.index + startOffset, match.index + startOffset + match[0].length);
                             });
                             return;
                         }
@@ -2913,19 +2960,18 @@
         // Toast helper function
         let __toastTimer = null;
         function showToast(message, duration = 2000) {
-            const t = document.getElementById('toast');
-            if (!t) return;
-            t.textContent = message;
-            t.hidden = false;
+            if (!TOAST) return;
+            TOAST.textContent = message;
+            TOAST.hidden = false;
             // Force reflow so the transition always runs when toggling
-            void t.offsetWidth;
-            t.classList.add('show');
+            void TOAST.offsetWidth;
+            TOAST.classList.add('show');
             if (__toastTimer) {
                 clearTimeout(__toastTimer);
             }
             __toastTimer = setTimeout(() => {
-                t.classList.remove('show');
-                setTimeout(() => { t.hidden = true; }, 220);
+                TOAST.classList.remove('show');
+                setTimeout(() => { TOAST.hidden = true; }, 220);
                 __toastTimer = null;
             }, duration);
         }
