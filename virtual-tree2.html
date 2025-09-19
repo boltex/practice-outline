@@ -3212,12 +3212,12 @@
                     SHOW_COLLAPSE_ALL.checked = prefs.showCollapseAll ?? true;
 
                     // Find-pane options
-                    if (prefs.findWholeWord !== undefined) OPT_WHOLE.checked = prefs.findWholeWord;
-                    if (prefs.findIgnoreCase !== undefined) OPT_IGNORECASE.checked = prefs.findIgnoreCase;
-                    if (prefs.findRegexp !== undefined) OPT_REGEXP.checked = prefs.findRegexp;
-                    if (prefs.findMark !== undefined) OPT_MARK.checked = prefs.findMark;
-                    if (prefs.findHeadline !== undefined) OPT_HEADLINE.checked = prefs.findHeadline;
-                    if (prefs.findBody !== undefined) OPT_BODY.checked = prefs.findBody;
+                    OPT_WHOLE.checked = prefs.findWholeWord ?? OPT_WHOLE.checked;
+                    OPT_IGNORECASE.checked = prefs.findIgnoreCase ?? OPT_IGNORECASE.checked;
+                    OPT_REGEXP.checked = prefs.findRegexp ?? OPT_REGEXP.checked;
+                    OPT_MARK.checked = prefs.findMark ?? OPT_MARK.checked;
+                    OPT_HEADLINE.checked = prefs.findHeadline ?? OPT_HEADLINE.checked;
+                    OPT_BODY.checked = prefs.findBody ?? OPT_BODY.checked;
 
                     // Set the find scope radio
                     if (prefs.findScope) {
