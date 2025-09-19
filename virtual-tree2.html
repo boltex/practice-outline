@@ -1278,6 +1278,7 @@
         const OPT_IGNORECASE = document.getElementById('opt-ignorecase');
         const OPT_REGEXP = document.getElementById('opt-regexp');
         const OPT_MARK = document.getElementById('opt-mark');
+
         const CONFIG_BTN = document.getElementById('config-btn');
 
         const SHOW_PREV_NEXT_MARK = document.getElementById('show-prev-next-mark');
@@ -2582,7 +2583,8 @@
             }
         }
 
-        function focusOnFindInput() {
+        function startFind() {
+            initialFindNode = null; // If null, find next will set this, used with "Suboutline Only" find radio option (value: suboutline)
             if (HTML_ELEMENT.getAttribute('data-show-config') === 'true') {
                 toggleConfiguration(); // // Make find input visible if in settings screen
             }
@@ -2594,7 +2596,7 @@
         function handleGlobalKeyDown(e) {
             if (e.key.toLowerCase() === 'f' && e.ctrlKey && !e.altKey && !e.metaKey) {
                 e.preventDefault();
-                focusOnFindInput();
+                startFind();
             } else if (e.key.toLowerCase() === 'm' && e.ctrlKey && !e.altKey && !e.metaKey) {
                 e.preventDefault();
                 toggleMarkCurrentNode();
@@ -2671,9 +2673,7 @@
 
         // Find functionality
         function findNext() {
-
             if (!selectedNode) return; // No selection, nothing to search from
-
             const searchText = FIND_INPUT.value.trim();
             if (!searchText) {
                 showToast('Empty find pattern', 1500);
@@ -2690,6 +2690,15 @@
             if (!searchInBody && !searchInHeadlines) {
                 showToast('not searching headline or body', 2000);
                 return; // Nothing to search in
+            }
+            if (!initialFindNode) {
+                initialFindNode = selectedNode; // Set initial find node if not already set
+            }
+
+            let selectedRadioValue = ''; // Falsy for now
+            const selectedRadio = document.querySelector(`input[name="find-scope"]:checked`);
+            if (selectedRadio) {
+                selectedRadioValue = selectedRadio.value;
             }
 
             let pattern; // Create regex pattern based on search options
@@ -2713,6 +2722,10 @@
 
                 while (currentIndex < totalNodes) {
                     const node = allNodesInOrder[currentIndex];
+                    if (selectedRadioValue === 'suboutline' && (initialFindNode !== node && isAncestorOf(initialFindNode, node) === false)) {
+                        break; // Reached outside suboutline of initialFindNode
+                    }
+
                     let headString = data[node.gnx]?.headString || "";
                     let body = data[node.gnx]?.bodyString || "";
 
@@ -2800,6 +2813,9 @@
                             return;
                         }
                     }
+                    if (selectedRadioValue === 'nodeonly') {
+                        break; // Only search current node
+                    }
                     currentIndex++;
                 }
 
@@ -2816,7 +2832,6 @@
 
         function findPrevious() {
             if (!selectedNode) return; // No selection, nothing to search from
-
             const searchText = FIND_INPUT.value.trim();
             if (!searchText) {
                 showToast('Empty find pattern', 1500);
@@ -2833,6 +2848,15 @@
             if (!searchInBody && !searchInHeadlines) {
                 showToast('not searching headline or body', 2000);
                 return; // Nothing to search in
+            }
+            if (!initialFindNode) {
+                initialFindNode = selectedNode; // Set initial find node if not already set
+            }
+
+            let selectedRadioValue = ''; // Falsy for now
+            const selectedRadio = document.querySelector(`input[name="find-scope"]:checked`);
+            if (selectedRadio) {
+                selectedRadioValue = selectedRadio.value;
             }
 
             let pattern; // Create regex pattern based on search options
@@ -2943,6 +2967,12 @@
 
                 while (currentIndex >= 0) {
                     const node = allNodesInOrder[currentIndex];
+                    if (selectedRadioValue === 'nodeonly') {
+                        break; // Only search current node
+                    }
+                    if (selectedRadioValue === 'suboutline' && (initialFindNode !== node && isAncestorOf(initialFindNode, node) === false)) {
+                        break; // Reached outside suboutline of initialFindNode
+                    }
                     let headString = data[node.gnx]?.headString || "";
                     let body = data[node.gnx]?.bodyString || "";
 
@@ -2987,7 +3017,6 @@
                             return;
                         }
                     }
-
                     currentIndex--;
                 }
 
