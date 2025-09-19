@@ -2851,8 +2851,6 @@
                 const startIndex = allNodesInOrder.indexOf(selectedNode);
                 if (startIndex === -1) return;
 
-                let currentIndex = startIndex; // start from current selection
-
                 // Helper function to find the last match in a string
                 function findLastMatch(str) {
                     let lastMatchIndex = -1;
@@ -2869,8 +2867,11 @@
                     return lastMatchIndex !== -1 ? { index: lastMatchIndex, length: lastMatchLength } : null;
                 }
 
+                // Flag to track if we found a match in the current node
+                let foundMatchInCurrentNode = false;
+
                 // First, check the current node with respect to the current selection
-                const node = allNodesInOrder[currentIndex];
+                const node = selectedNode;
                 let headString = data[node.gnx]?.headString || "";
                 let body = data[node.gnx]?.bodyString || "";
 
@@ -2892,13 +2893,20 @@
 
                 const currentFocus = findFocus();
 
-                // Key changes here: Handle focus location differently
+                // Check current node based on focus
                 if (currentFocus === 2 && searchInBody && body) {
                     // If focused in body, check body first
                     const limitedBody = body.substring(0, bodyOffset);
                     const match = findLastMatch(limitedBody);
 
                     if (match) {
+                        if (markFind && !marked.has(node.gnx)) {
+                            marked.add(node.gnx);
+                            if (data[node.gnx]) {
+                                data[node.gnx].icon = (data[node.gnx].icon || 0) | 2; // Set marked bit
+                            }
+                        }
+
                         selectAndOrToggleAndRedraw(node);
                         BODY_PANE.focus();
                         setTimeout(() => {
@@ -2908,18 +2916,16 @@
                     }
                 }
 
-                // Check headline if focused in outline or after body check didn't find anything
+                // Check headline if appropriate
                 if (searchInHeadlines && headString) {
-                    const limitedHeadline = currentFocus === 1 ? headString.substring(0, headlineOffset) : headString;
+                    const limitedHeadline = currentFocus !== 2 ? headString.substring(0, headlineOffset) : headString;
                     const match = findLastMatch(limitedHeadline);
 
                     if (match) {
-                        if (markFind) {
-                            if (!marked.has(node.gnx)) {
-                                marked.add(node.gnx);
-                                if (data[node.gnx]) {
-                                    data[node.gnx].icon = (data[node.gnx].icon || 0) | 2; // Set marked bit
-                                }
+                        if (markFind && !marked.has(node.gnx)) {
+                            marked.add(node.gnx);
+                            if (data[node.gnx]) {
+                                data[node.gnx].icon = (data[node.gnx].icon || 0) | 2; // Set marked bit
                             }
                         }
 
@@ -2932,22 +2938,8 @@
                     }
                 }
 
-                // Only check current node's body if NOT focused in outline pane
-                if (currentFocus !== 1 && searchInBody && body) {
-                    const match = findLastMatch(body);
-
-                    if (match) {
-                        selectAndOrToggleAndRedraw(node);
-                        BODY_PANE.focus();
-                        setTimeout(() => {
-                            highlightMatchInBody(match.index, match.index + match.length);
-                        });
-                        return;
-                    }
-                }
-
-                // Continue searching through previous nodes
-                currentIndex--;
+                // Continue searching through previous nodes if no match was found in current node
+                let currentIndex = startIndex - 1;
 
                 while (currentIndex >= 0) {
                     const node = allNodesInOrder[currentIndex];
@@ -2959,6 +2951,13 @@
                         const match = findLastMatch(body);
 
                         if (match) {
+                            if (markFind && !marked.has(node.gnx)) {
+                                marked.add(node.gnx);
+                                if (data[node.gnx]) {
+                                    data[node.gnx].icon = (data[node.gnx].icon || 0) | 2; // Set marked bit
+                                }
+                            }
+
                             selectAndOrToggleAndRedraw(node);
                             BODY_PANE.focus();
                             setTimeout(() => {
@@ -2973,12 +2972,10 @@
                         const match = findLastMatch(headString);
 
                         if (match) {
-                            if (markFind) {
-                                if (!marked.has(node.gnx)) {
-                                    marked.add(node.gnx);
-                                    if (data[node.gnx]) {
-                                        data[node.gnx].icon = (data[node.gnx].icon || 0) | 2; // Set marked bit
-                                    }
+                            if (markFind && !marked.has(node.gnx)) {
+                                marked.add(node.gnx);
+                                if (data[node.gnx]) {
+                                    data[node.gnx].icon = (data[node.gnx].icon || 0) | 2; // Set marked bit
                                 }
                             }
 
