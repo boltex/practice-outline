@@ -1284,7 +1284,7 @@
 
         const HTML_ELEMENT = document.documentElement;
 
-        // -------------------------------------- Navigation helpers
+        // * Navigation helpers
         function children(node) {
             // Given a node, return a shallow copy of its children array or an empty array.
             return node && node.children ? node.children.slice() : [];
@@ -1525,7 +1525,7 @@
             }
         };
 
-        // -------------------------------------- Navigation actions
+        // * Navigation actions
         function hoistNode() {
             if (!selectedNode) return;
 
@@ -1806,7 +1806,7 @@
             PREV_MARKED_BTN.disabled = !hasMarkedNodes;
         }
 
-        // -------------------------------------- Hoist button
+        // * Hoist button
         function updateHoistButtonStates() {
             // Update hoist/dehoist button states
             const isCurrentlyHoisted = hoistStack.length > 0 && hoistStack[hoistStack.length - 1] === selectedNode;
@@ -1814,7 +1814,7 @@
             HOIST_BTN.disabled = !selectedNode || !hasChildren(selectedNode) || isCurrentlyHoisted;
         }
 
-        // -------------------------------------- History
+        // * History
         function updateHistoryButtonStates() {
             // Disable/enable buttons based on history position
             PREV_BTN.disabled = currentHistoryIndex <= 0;
@@ -1874,7 +1874,7 @@
             }
         }
 
-        // -------------------------------------- Rendering helpers
+        // * Rendering helpers
         function getCurrentRoot() {
             // Return the current top of the hoist stack or the main tree root
             return hoistStack.length > 0 ? hoistStack[hoistStack.length - 1] : tree;
@@ -2295,35 +2295,24 @@
         }
 
         function saveDocumentStateToLocalStorage() {
-
-            // TODO: Save more state if needed (selected node, hoist stack, expanded nodes, etc.)
-            // but all as relative number positions from the top of a flattened tree to avoid gnx issues
-
-            // start by making a flattened tree from the hidden root, not just the possible hoisted node
-            // (we will note the position of the hoisted node if any in that list, and the selected node too)
-            // That list will also be used to note the positions of the expanded nodes. On load will restore
-            // the hoist stack, selected node and expanded nodes from those positions. (although it will not restore
-            // expanded nodes inside collapsed nodes, but that is an intended approximation)
-
-            const flatRowsFromRoot = flattenTree(tree, 0, true);
+            // Use the allNodesInOrder tree, the full list from the top as if all nodes were expanded,
+            // to note the position of hoisted node(s), expanded node(s), and the currently selected node.
             let hoistStackPositions = []; // empty means no hoist
-            let selectedPosition = -1; // -1 means no selection
-            const expandedPositions = [];
-
-            for (let i = 0; i < flatRowsFromRoot.length; i++) {
-                if (hoistStack.length > 0 && hoistStack.indexOf(flatRowsFromRoot[i].node) !== -1) {
-                    hoistStackPositions.push(i); // Is part of the hoist stack
-                }
-                if (flatRowsFromRoot[i].node === selectedNode) {
-                    selectedPosition = i; // Got the selected node position.
-                }
-                if (isExpanded(flatRowsFromRoot[i].node)) {
-                    expandedPositions.push(i);
+            for (const hoisted of hoistStack) {
+                const pos = allNodesInOrder.indexOf(hoisted);
+                if (pos !== -1) {
+                    hoistStackPositions.push(pos);
                 }
             }
-
-            // Note marked are the gnx keys, not numeric positions from the flat list
-            const markedArray = Array.from(marked);
+            const expandedPositions = [];
+            for (const node of expanded) {
+                const pos = allNodesInOrder.indexOf(node);
+                if (pos !== -1) {
+                    expandedPositions.push(pos);
+                }
+            }
+            const selectedPosition = allNodesInOrder.indexOf(selectedNode); // -1 means no selection
+            const markedArray = Array.from(marked); // Marked are the gnx keys, not numeric positions from allNodesInOrder
             const dataToSave = {
                 marked: markedArray,
                 hoistStack: hoistStackPositions,
@@ -2340,7 +2329,6 @@
             if (savedData) {
                 try {
                     const parsedData = JSON.parse(savedData);
-
                     // Start by rebuilding marked set and their related node icons
                     if (parsedData && Array.isArray(parsedData.marked)) {
                         marked.clear();
@@ -2352,43 +2340,26 @@
                             }
                         });
                     }
-
+                    // If document stated data is found, rebuild hoist stack, expanded set, and selected node
                     if (parsedData && Array.isArray(parsedData.expanded) && Array.isArray(parsedData.hoistStack) && typeof parsedData.selected === 'number') {
-                        const expandedPositions = parsedData.expanded; // Numbered positions as you go along from hidden root's first child, and expanding as you go.
-                        let expandedPositionsIndex = 0; // Index in the expandedPositions array
-                        const hoistPositions = parsedData.hoistStack; // Numbered positions as you go along from hidden root's first child, and expanding as you go.
-                        const selectedPosition = parsedData.selected; // Numbered position that will match at some point in the flattened list built as we expand nodes
+                        const expandedPositions = parsedData.expanded;
+                        let expandedPositionsIndex = 0;
+                        const hoistPositions = parsedData.hoistStack;
+                        const selectedPosition = parsedData.selected;
 
-                        // Start from the hidden root, building a temporary flattened list as we go, skip children if position not the next expanded position at expandedPositions[expandedPositionsIndex]
-                        // (increment expandedPositionsIndex as we match positions)
-                        expanded.clear();
-                        let atPosition = -1; // start at -1 to count children correctly
-                        let hoistNode = null;
-
-                        const doChildren = (node) => {
-                            if (node.children) {
-                                for (const child of node.children) {
-                                    atPosition++;
-                                    // Check if this position is in the hoist stack positions
-                                    if (hoistPositions.indexOf(atPosition) !== -1) {
-                                        hoistNode = child; // This node is part of the hoist stack
-                                        hoistStack.push(hoistNode);
-                                    }
-                                    // Check if this position matches the selected position
-                                    if (atPosition === selectedPosition) {
-                                        initialSelectedNode = child;
-                                    }
-                                    // Check if this position is in the expanded positions (this will increment atPosition as we go!)
-                                    if (expandedPositionsIndex < expandedPositions.length && expandedPositions[expandedPositionsIndex] === atPosition) {
-                                        expanded.add(child);
-                                        expandedPositionsIndex++;
-                                        doChildren(child); // Recurse into children
-                                    }
-                                }
+                        for (const hoisted of hoistPositions) {
+                            if (hoisted >= 0 && hoisted < allNodesInOrder.length) {
+                                hoistStack.push(allNodesInOrder[hoisted]);
                             }
-                        };
-
-                        doChildren(tree);
+                        }
+                        for (const node of expandedPositions) {
+                            if (node >= 0 && node < allNodesInOrder.length) {
+                                expanded.add(allNodesInOrder[node]);
+                            }
+                        }
+                        if (selectedPosition >= 0 && selectedPosition < allNodesInOrder.length) {
+                            initialSelectedNode = allNodesInOrder[selectedPosition];
+                        }
 
                     }
                     return initialSelectedNode;
@@ -2429,8 +2400,7 @@
             } else {
                 HTML_ELEMENT.setAttribute('data-layout', 'vertical');
             }
-            // Proportions will have changed so we must update sizes
-            updatePanelSizes();
+            updatePanelSizes(); // Proportions will have changed so we must update sizes
             if (flatRows) {
                 renderTree();
             }
@@ -2573,7 +2543,6 @@
             }
         }
 
-        // Outline pane key mapping for better organization
         const outlinePaneKeyMap = {
             'Enter': () => BODY_PANE.focus(),
             'Tab': () => BODY_PANE.focus(),
@@ -2604,9 +2573,8 @@
         }
 
         function focusOnFindInput() {
-            // Make sure that the find input is visible
             if (HTML_ELEMENT.getAttribute('data-show-config') === 'true') {
-                toggleConfiguration();
+                toggleConfiguration(); // // Make find input visible if in settings screen
             }
             FIND_INPUT.focus();
             FIND_INPUT.select();
@@ -2672,7 +2640,7 @@
                 }
             }
 
-            // layout has been initialized before dom loaded, to prevent 'fouc'
+            // Layout has been initialized before dom loaded, to prevent 'fouc'
             renderTree(); // flatRows already set by selectAndOrToggleAndRedraw: Ok to render now
             scrollSelectedNodeIntoView();
         }
@@ -2792,7 +2760,7 @@
             }
         }
 
-        // ----------------- Toast helper -----------------
+        // Toast helper function
         let __toastTimer = null;
         function showToast(message, duration = 2000) {
             const t = document.getElementById('toast');
