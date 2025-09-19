@@ -2738,7 +2738,7 @@
 
                         if (match) {
                             // If 'mark find' is checked, mark the found node if not already marked
-                            if (markFind.checked) {
+                            if (markFind) {
                                 if (!marked.has(node.gnx)) {
                                     marked.add(node.gnx);
                                     if (data[node.gnx]) {
@@ -2782,6 +2782,14 @@
 
                         const match = regex.exec(body);
                         if (match) {
+                            if (markFind) {
+                                if (!marked.has(node.gnx)) {
+                                    marked.add(node.gnx);
+                                    if (data[node.gnx]) {
+                                        data[node.gnx].icon = (data[node.gnx].icon || 0) | 2; // Set marked bit
+                                    }
+                                }
+                            }
                             selectAndOrToggleAndRedraw(node); // This also calls scrollSelectedNodeIntoView
                             if (findFocus() !== 2) {
                                 BODY_PANE.focus();
@@ -2807,7 +2815,193 @@
         }
 
         function findPrevious() {
-            showToast('Find-Previous functionality not yet implemented', 1500);
+            if (!selectedNode) return; // No selection, nothing to search from
+
+            const searchText = FIND_INPUT.value.trim();
+            if (!searchText) {
+                showToast('Empty find pattern', 1500);
+                return; // Empty search, do nothing
+            }
+
+            const searchInBody = OPT_BODY.checked;
+            const searchInHeadlines = OPT_HEADLINE.checked;
+            const ignoreCase = OPT_IGNORECASE.checked;
+            const isRegexp = OPT_REGEXP.checked;
+            const wholeWord = OPT_WHOLE.checked;
+            const markFind = OPT_MARK.checked;
+
+            if (!searchInBody && !searchInHeadlines) {
+                showToast('not searching headline or body', 2000);
+                return; // Nothing to search in
+            }
+
+            let pattern; // Create regex pattern based on search options
+            try {
+                if (isRegexp) {
+                    pattern = searchText;
+                } else {
+                    pattern = searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape special regex characters
+                    if (wholeWord) {
+                        pattern = '\\b' + pattern + '\\b'; // Add word boundaries if whole word option is enabled
+                    }
+                }
+                const flags = ignoreCase ? 'gi' : 'g';
+                const regex = new RegExp(pattern, flags);
+
+                const startIndex = allNodesInOrder.indexOf(selectedNode);
+                if (startIndex === -1) return;
+
+                let currentIndex = startIndex; // start from current selection
+
+                // Helper function to find the last match in a string
+                function findLastMatch(str) {
+                    let lastMatchIndex = -1;
+                    let lastMatchLength = 0;
+
+                    let match;
+                    while ((match = regex.exec(str)) !== null) {
+                        lastMatchIndex = match.index;
+                        lastMatchLength = match[0].length;
+                        // Prevent infinite loop for zero-width matches
+                        if (regex.lastIndex === match.index) regex.lastIndex++;
+                    }
+
+                    return lastMatchIndex !== -1 ? { index: lastMatchIndex, length: lastMatchLength } : null;
+                }
+
+                // First, check the current node with respect to the current selection
+                const node = allNodesInOrder[currentIndex];
+                let headString = data[node.gnx]?.headString || "";
+                let body = data[node.gnx]?.bodyString || "";
+
+                // Get current selection info
+                const selection = window.getSelection();
+                let headlineOffset = Infinity;
+                let bodyOffset = Infinity;
+
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    if (selectedLabelElement && selectedLabelElement.contains(range.commonAncestorContainer)) {
+                        // Selection is in headline
+                        headlineOffset = range.startOffset;
+                    } else if (BODY_PANE.contains(range.commonAncestorContainer)) {
+                        // Selection is in body
+                        bodyOffset = range.startOffset;
+                    }
+                }
+
+                const currentFocus = findFocus();
+
+                // If focused in body, check body first then headline
+                if (currentFocus === 2 && searchInBody && body) {
+                    const limitedBody = body.substring(0, bodyOffset);
+                    const match = findLastMatch(limitedBody);
+
+                    if (match) {
+                        selectAndOrToggleAndRedraw(node);
+                        BODY_PANE.focus();
+                        setTimeout(() => {
+                            highlightMatchInBody(match.index, match.index + match.length);
+                        });
+                        return;
+                    }
+                }
+
+                // Check headline if appropriate
+                if (searchInHeadlines && headString && (!searchInBody || bodyOffset === 0)) {
+                    const limitedHeadline = currentFocus === 1 ? headString.substring(0, headlineOffset) : headString;
+                    const match = findLastMatch(limitedHeadline);
+                    console.log('findPrevious: headline match', match, 'in', limitedHeadline);
+                    if (match) {
+                        if (markFind) {
+                            console.log('TRYING TO MARK', node.gnx);
+                            if (!marked.has(node.gnx)) {
+                                marked.add(node.gnx);
+                                if (data[node.gnx]) {
+                                    data[node.gnx].icon = (data[node.gnx].icon || 0) | 2; // Set marked bit
+                                }
+                            }
+                        }
+
+                        selectAndOrToggleAndRedraw(node);
+                        OUTLINE_PANE.focus();
+                        setTimeout(() => {
+                            highlightMatchInHeadline(match.index, match.index + match.length);
+                        });
+                        return;
+                    }
+                }
+
+                // If still in current node and focused in headline, check body as last resort
+                if (currentFocus === 1 && searchInBody && body) {
+                    const match = findLastMatch(body);
+
+                    if (match) {
+                        selectAndOrToggleAndRedraw(node);
+                        BODY_PANE.focus();
+                        setTimeout(() => {
+                            highlightMatchInBody(match.index, match.index + match.length);
+                        });
+                        return;
+                    }
+                }
+
+                // Continue searching through previous nodes
+                currentIndex--;
+
+                while (currentIndex >= 0) {
+                    const node = allNodesInOrder[currentIndex];
+                    let headString = data[node.gnx]?.headString || "";
+                    let body = data[node.gnx]?.bodyString || "";
+
+                    // In previous nodes, check body first (since we're going backward)
+                    if (searchInBody && body) {
+                        const match = findLastMatch(body);
+
+                        if (match) {
+                            selectAndOrToggleAndRedraw(node);
+                            BODY_PANE.focus();
+                            setTimeout(() => {
+                                highlightMatchInBody(match.index, match.index + match.length);
+                            });
+                            return;
+                        }
+                    }
+
+                    // Then check headline
+                    if (searchInHeadlines && headString) {
+                        const match = findLastMatch(headString);
+
+                        if (match) {
+                            if (markFind) {
+                                if (!marked.has(node.gnx)) {
+                                    marked.add(node.gnx);
+                                    if (data[node.gnx]) {
+                                        data[node.gnx].icon = (data[node.gnx].icon || 0) | 2; // Set marked bit
+                                    }
+                                }
+                            }
+
+                            selectAndOrToggleAndRedraw(node);
+                            OUTLINE_PANE.focus();
+                            setTimeout(() => {
+                                highlightMatchInHeadline(match.index, match.index + match.length);
+                            });
+                            return;
+                        }
+                    }
+
+                    currentIndex--;
+                }
+
+                let searchedParams = [];
+                if (searchInHeadlines) searchedParams.push('head');
+                if (searchInBody) searchedParams.push('body');
+                showToast(`Not found: (${searchedParams.join(", ")}) ${searchText}`, 1500);
+
+            } catch (e) {
+                showToast('Invalid search pattern: ' + e.message, 2000);
+            }
         }
 
         function highlightMatchInHeadline(startIndex, endIndex) {
