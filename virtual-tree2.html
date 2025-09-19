@@ -2631,15 +2631,16 @@
         function handleDOMContentLoaded() {
             const initialSelectedNode = loadDocumentStateFromLocalStorage();
             if (!initialSelectedNode) {
-                selectAndOrToggleAndRedraw(tree.children[0]);
+                selectAndOrToggleAndRedraw(tree.children[0]); // sets selectedNode amd flatRows
             } else {
-                selectAndOrToggleAndRedraw(initialSelectedNode); // sets selectedNode
+                selectAndOrToggleAndRedraw(initialSelectedNode); // sets selectedNode amd flatRows
                 if (data[selectedNode.gnx]) {
                     BODY_PANE.textContent = data[selectedNode.gnx].bodyString || "";
                 }
             }
-            // selectAndOrToggleAndRedraw sets flatRows, so we can now render it
-            renderTree();
+
+            // layout has been initialized before dom loaded, to prevent 'fouc'
+            renderTree(); // flatRows already set by selectAndOrToggleAndRedraw: Ok to render now
             scrollSelectedNodeIntoView();
         }
 
