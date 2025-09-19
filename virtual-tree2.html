@@ -477,6 +477,7 @@
             z-index: 1000;
             overflow: hidden;
             transition: transform 0.2s ease;
+            user-select: none;
         }
 
         .action-button:hover {
@@ -1699,7 +1700,6 @@
             if (isVisible(node)) {
                 renderTree();
             }
-            debouncedSaveMarkedNodes();
         }
 
         function toggleMarkCurrentNode() {
@@ -2247,26 +2247,15 @@
             updateOutlinePaneSize();
         }
 
-        function saveMarkedNodesToLocalStorage() {
+        function saveDocumentStateToLocalStorage() {
+            // TODO: Save more state if needed (selected node, hoist stack, expanded nodes, etc.)
+            // but all as relative number positions from the top of a flattened tree to avoid gnx issues
             const markedArray = Array.from(marked);
             const dataToSave = {
                 marked: markedArray
             };
             safeLocalStorageSet(title, JSON.stringify(dataToSave));
         }
-
-        const debouncedSaveMarkedNodes = (function () {
-            let timeout = null;
-            return function () {
-                if (timeout) {
-                    clearTimeout(timeout);
-                }
-                timeout = setTimeout(function () {
-                    saveMarkedNodesToLocalStorage();
-                    timeout = null;
-                }, 500); // 500ms debounce time
-            };
-        })();
 
         function loadMarkedNodesFromLocalStorage() {
             const savedData = safeLocalStorageGet(title);
@@ -2367,6 +2356,7 @@
         function setupWindowHandlers() {
             window.addEventListener('resize', throttle(handleWindowResize, 67));
             window.addEventListener('keydown', handleGlobalKeyDown);
+            window.addEventListener('beforeunload', saveDocumentStateToLocalStorage);
         }
 
         function setupButtonHandlers() {
