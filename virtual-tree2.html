@@ -1917,7 +1917,6 @@
         }
 
         function selectAndOrToggleAndRedraw(newSelectedNode = null, nodeToToggle = null) {
-
             // Handle toggling if requested
             if (nodeToToggle) {
                 if (isExpanded(nodeToToggle)) {
@@ -1971,12 +1970,12 @@
                 } else {
                     BODY_PANE.textContent = "";
                 }
-                scrollSelectedNodeIntoView();
             }
+            scrollSelectedNodeIntoView();
         }
 
         function scrollSelectedNodeIntoView() {
-            if (!selectedNode) return;
+            if (!selectedNode || !flatRows) return; // Not initialized yet
 
             const selectedIndex = flatRows.findIndex(row => row.node === selectedNode);
             if (selectedIndex === -1) return; // Not found (shouldn't happen)
@@ -2668,68 +2667,145 @@
         // Find functionality
         function findNext() {
 
-            let startFromOutline = findFocus() < 2; // 1 or 0 means start from outline, 2 means start from body
-            // We will use the selectedNode as the starting point for searching
-            // and the allNodesInOrder array for linear traversal
-            if (!selectedNode) return; // No selection, nothing to search from (should not happen)
-            const searchText = FIND_INPUT.value; // No trim because spaces may be meaningful
-            if (!searchText) return; // Empty search, do nothing
+            if (!selectedNode) return; // No selection, nothing to search from
+
+            const searchText = FIND_INPUT.value.trim();
+            if (!searchText) {
+                showToast('Empty find pattern', 1500);
+                return; // Empty search, do nothing
+            }
 
             const searchInBody = OPT_BODY.checked;
             const searchInHeadlines = OPT_HEADLINE.checked;
+            const ignoreCase = document.getElementById('opt-ignorecase').checked;
+            const isRegexp = document.getElementById('opt-regexp').checked;
+            const wholeWord = document.getElementById('opt-whole').checked;
+
             if (!searchInBody && !searchInHeadlines) {
                 showToast('not searching headline or body', 2000);
                 return; // Nothing to search in
             }
 
-            const startIndex = allNodesInOrder.indexOf(selectedNode);
-            if (startIndex === -1) return; // Selected node not found in allNodesInOrder (should not happen)
+            let pattern; // Create regex pattern based on search options
+            try {
+                if (isRegexp) {
+                    pattern = searchText;
+                } else {
+                    pattern = searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape special regex characters
+                    if (wholeWord) {
+                        pattern = '\\b' + pattern + '\\b'; // Add word boundaries if whole word option is enabled
+                    }
+                }
+                const flags = ignoreCase ? 'gi' : 'g';
+                const regex = new RegExp(pattern, flags);
 
-            const totalNodes = allNodesInOrder.length;
-            let currentIndex = startIndex;
+                const startIndex = allNodesInOrder.indexOf(selectedNode);
+                if (startIndex === -1) return;
 
-            // Continue searching in the body or headlines
-            while (currentIndex < totalNodes) {
-                const node = allNodesInOrder[currentIndex];
-                const headString = data[node.gnx]?.headString || "";
-                const body = data[node.gnx]?.bodyString || "";
+                const totalNodes = allNodesInOrder.length;
+                let currentIndex = startIndex; // start from current selection
 
-                if (searchInHeadlines && headString.includes(searchText)) {
-                    selectAndOrToggleAndRedraw(node);
-                    scrollSelectedNodeIntoView();
-                    // Focus the outline pane if not already focused
-                    if (findFocus() !== 1) {
-                        OUTLINE_PANE.focus();
+                while (currentIndex < totalNodes) {
+                    const node = allNodesInOrder[currentIndex];
+                    const headString = data[node.gnx]?.headString || "";
+                    const body = data[node.gnx]?.bodyString || "";
+
+                    if (searchInHeadlines) {
+                        regex.lastIndex = 0; // Reset regex state
+                        const match = regex.exec(headString);
+
+                        if (match) {
+                            selectAndOrToggleAndRedraw(node); // This also calls scrollSelectedNodeIntoView
+
+                            // Focus outline pane and highlight match
+                            if (findFocus() !== 1) {
+                                OUTLINE_PANE.focus();
+                            }
+
+                            // Highlight the match in the headline using selectedLabelElement
+                            setTimeout(() => {
+                                highlightMatchInHeadline(match.index, match.index + match[0].length);
+                            });
+
+                            return;
+                        }
                     }
 
-                    return;
-                }
-
-                if (searchInBody && body.includes(searchText)) {
-                    selectAndOrToggleAndRedraw(node);
-                    scrollSelectedNodeIntoView();
-                    // Focus the body pane if not already focused
-                    if (findFocus() !== 2) {
-                        BODY_PANE.focus();
+                    if (searchInBody && body) {
+                        regex.lastIndex = 0; // Reset regex state
+                        const match = regex.exec(body);
+                        if (match) {
+                            selectAndOrToggleAndRedraw(node); // This also calls scrollSelectedNodeIntoView
+                            if (findFocus() !== 2) {
+                                BODY_PANE.focus();
+                            }
+                            setTimeout(() => {
+                                highlightMatchInBody(match.index, match.index + match[0].length);
+                            });
+                            return;
+                        }
                     }
-
-                    return;
+                    currentIndex++;
                 }
 
-                currentIndex++;
+                let searchedParams = [];
+                if (searchInHeadlines) searchedParams.push('head');
+                if (searchInBody) searchedParams.push('body');
+                showToast(`Not found: (${searchedParams.join(", ")}) ${searchText}`, 1500);
+
+            } catch (e) {
+                showToast('Invalid search pattern: ' + e.message, 2000);
             }
-
-            let searchedParams = [];
-            if (searchInHeadlines) searchedParams.push('head');
-            if (searchInBody) searchedParams.push('body');
-
-            // If we reach here, no match was found
-            showToast(`Not found: (${searchedParams.join(", ")}) ${searchText}`, 1500);
 
         }
 
         function findPrevious() {
             showToast('Find-Previous functionality not yet implemented', 1500);
+        }
+
+        function highlightMatchInHeadline(startIndex, endIndex) {
+            // Use the global selectedLabelElement which is already set after selectAndOrToggleAndRedraw
+            if (!selectedLabelElement) return;
+
+            // Find the first text node in the label element
+            let textNode = null;
+            for (const node of selectedLabelElement.childNodes) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    textNode = node;
+                    break;
+                }
+            }
+
+            if (!textNode) return;
+
+            try {
+                const range = document.createRange();
+                range.setStart(textNode, startIndex);
+                range.setEnd(textNode, endIndex);
+
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+            } catch (e) {
+                console.error('Error setting headline selection:', e);
+            }
+        }
+
+        function highlightMatchInBody(startIndex, endIndex) {
+            // The body pane content is set directly as textContent, so it's a single text node
+            if (!BODY_PANE.firstChild || BODY_PANE.firstChild.nodeType !== Node.TEXT_NODE) return;
+
+            try {
+                const range = document.createRange();
+                range.setStart(BODY_PANE.firstChild, startIndex);
+                range.setEnd(BODY_PANE.firstChild, endIndex);
+
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+            } catch (e) {
+                console.error('Error setting body selection:', e);
+            }
         }
 
         function findFocus() {
