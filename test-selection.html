@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
-  <title>Selection Example</title>
+  <title>Selection Example with Programmatic Range</title>
   <style>
     body {
       font-family: sans-serif;
       margin: 20px;
     }
+
     #textDiv {
       border: 1px solid #444;
       padding: 10px;
@@ -15,62 +17,107 @@
       height: 150px;
       overflow-y: auto;
     }
+
     #output {
       margin-top: 15px;
       padding: 10px;
       background: #f0f0f0;
       border: 1px solid #aaa;
     }
+
+    button {
+      margin-top: 10px;
+      padding: 6px 12px;
+      font-size: 14px;
+    }
   </style>
 </head>
+
 <body>
 
-<h3>Click and select text inside the box:</h3>
+  <h3>Click and select text inside the box:</h3>
 
-<div id="textDiv" contenteditable="true">
-  This is some sample text. You can click inside this box, move the cursor, 
-  or select part of the text. The script will show the current selection 
-  or cursor position inside this div.
-</div>
+  <div id="textDiv" contenteditable="plaintext-only">This is some sample text. You can click inside this box, move the
+    cursor,
+    or select part of the text. The script will show the current selection
+    or cursor position inside this div.
+  </div>
 
-<div id="output">Selection info will appear here...</div>
+  <button id="setSelectionBtn">Set Selection (chars 5–10)</button>
 
-<script>
-  const textDiv = document.getElementById("textDiv");
-  const output = document.getElementById("output");
+  <div id="output">Selection info will appear here...</div>
 
-  function updateSelection() {
-    const selection = window.getSelection();
+  <script>
+    const textDiv = document.getElementById("textDiv");
+    const output = document.getElementById("output");
+    const setSelectionBtn = document.getElementById("setSelectionBtn");
 
-    if (!selection.rangeCount) {
-      output.textContent = "No selection.";
-      return;
+    function updateSelection() {
+      const selection = window.getSelection();
+
+      if (!selection.rangeCount) {
+        output.textContent = "No selection.";
+        return;
+      }
+
+      const range = selection.getRangeAt(0);
+
+      if (!textDiv.contains(range.commonAncestorContainer)) {
+        output.textContent = "Selection is outside the target div.";
+        return;
+      }
+
+      const selectedText = selection.toString();
+      let info = "";
+      if (selectedText.length > 0) {
+        info += `Selected text: "${selectedText}"`;
+      } else {
+        info += "Cursor is inside the div (no text selected).";
+      }
+      output.textContent = info;
     }
 
-    const range = selection.getRangeAt(0);
+    // function setSelection(start, end) {
+    //   const selection = window.getSelection();
+    //   const range = document.createRange();
 
-    // Ensure selection is inside our div
-    if (!textDiv.contains(range.commonAncestorContainer)) {
-      output.textContent = "Selection is outside the target div.";
-      return;
+    //   // Assume text is inside a single text node for simplicity
+    //   const textNode = textDiv.firstChild;
+
+    //   if (!textNode || textNode.nodeType !== Node.TEXT_NODE) {
+    //     alert("The div must contain a text node as its first child.");
+    //     return;
+    //   }
+
+    //   range.setStart(textNode, start);
+    //   range.setEnd(textNode, end);
+
+    //   selection.removeAllRanges();
+    //   selection.addRange(range);
+
+    //   updateSelection();
+    // }
+    function setSelection(start, end) {
+      // First ensure single text node by resetting the content
+      const textContent = textDiv.textContent;
+      textDiv.textContent = textContent;
+
+      const selection = window.getSelection();
+      const range = document.createRange();
+      const textNode = textDiv.firstChild;
+
+      range.setStart(textNode, start);
+      range.setEnd(textNode, end);
+
+      selection.removeAllRanges();
+      selection.addRange(range);
+
+      updateSelection();
     }
-
-    const selectedText = selection.toString();
-
-    let info = "";
-    if (selectedText.length > 0) {
-      info += "Selected text: \"" + selectedText + "\"";
-    } else {
-      info += "Cursor is inside the div (no text selected).";
-    }
-
-    output.textContent = info;
-  }
-
-  // Listen for mouse and keyboard selection changes
-  document.addEventListener("selectionchange", updateSelection);
-</script>
+    setSelectionBtn.addEventListener("click", () => setSelection(15, 20));
+    document.addEventListener("selectionchange", updateSelection);
+  </script>
 
 </body>
-</html>
 
+</html>
