@@ -905,8 +905,8 @@
                         <input id="scope-node" type="radio" name="find-scope" value="node" />
                         Node Only
                     </label>
-                    <label for="opt-head">
-                        <input id="opt-head" type="checkbox" name="find-target" checked />
+                    <label for="opt-headline">
+                        <input id="opt-headline" type="checkbox" name="find-target" checked />
                         Search Headline
                     </label>
                     <label for="opt-body">
@@ -1272,6 +1272,7 @@
         const PREV_MARKED_BTN = document.getElementById('prev-marked-btn');
 
         const FIND_INPUT = document.getElementById('find-input');
+        const OPT_HEADLINE = document.getElementById('opt-headline');
         const OPT_BODY = document.getElementById('opt-body');
         const CONFIG_BTN = document.getElementById('config-btn');
 
@@ -2666,7 +2667,65 @@
 
         // Find functionality
         function findNext() {
-            showToast('Find-Next functionality not yet implemented', 1500);
+
+            let startFromOutline = findFocus() < 2; // 1 or 0 means start from outline, 2 means start from body
+            // We will use the selectedNode as the starting point for searching
+            // and the allNodesInOrder array for linear traversal
+            if (!selectedNode) return; // No selection, nothing to search from (should not happen)
+            const searchText = FIND_INPUT.value; // No trim because spaces may be meaningful
+            if (!searchText) return; // Empty search, do nothing
+
+            const searchInBody = OPT_BODY.checked;
+            const searchInHeadlines = OPT_HEADLINE.checked;
+            if (!searchInBody && !searchInHeadlines) {
+                showToast('not searching headline or body', 2000);
+                return; // Nothing to search in
+            }
+
+            const startIndex = allNodesInOrder.indexOf(selectedNode);
+            if (startIndex === -1) return; // Selected node not found in allNodesInOrder (should not happen)
+
+            const totalNodes = allNodesInOrder.length;
+            let currentIndex = startIndex;
+
+            // Continue searching in the body or headlines
+            while (currentIndex < totalNodes) {
+                const node = allNodesInOrder[currentIndex];
+                const headString = data[node.gnx]?.headString || "";
+                const body = data[node.gnx]?.bodyString || "";
+
+                if (searchInHeadlines && headString.includes(searchText)) {
+                    selectAndOrToggleAndRedraw(node);
+                    scrollSelectedNodeIntoView();
+                    // Focus the outline pane if not already focused
+                    if (findFocus() !== 1) {
+                        OUTLINE_PANE.focus();
+                    }
+
+                    return;
+                }
+
+                if (searchInBody && body.includes(searchText)) {
+                    selectAndOrToggleAndRedraw(node);
+                    scrollSelectedNodeIntoView();
+                    // Focus the body pane if not already focused
+                    if (findFocus() !== 2) {
+                        BODY_PANE.focus();
+                    }
+
+                    return;
+                }
+
+                currentIndex++;
+            }
+
+            let searchedParams = [];
+            if (searchInHeadlines) searchedParams.push('head');
+            if (searchInBody) searchedParams.push('body');
+
+            // If we reach here, no match was found
+            showToast(`Not found: (${searchedParams.join(", ")}) ${searchText}`, 1500);
+
         }
 
         function findPrevious() {
