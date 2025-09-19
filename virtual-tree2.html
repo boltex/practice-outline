@@ -1245,6 +1245,8 @@
         const minWidth = 20;
         const minHeight = 20;
 
+        // Elements
+        let selectedLabelElement = null; // Track the currently selected label element in the outline pane
         const ROW_HEIGHT = 26;
         const LEFT_OFFSET = 16; // Padding from left edge
         const OUTLINE_FIND_CONTAINER = document.getElementById("outline-find-container");
@@ -2074,6 +2076,9 @@
                 }
 
                 labelSpan.textContent = row.label;
+                if (row.node === selectedNode) {
+                    selectedLabelElement = labelSpan;
+                }
 
                 div.appendChild(labelSpan);
                 SPACER.appendChild(div);
