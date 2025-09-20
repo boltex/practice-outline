@@ -662,6 +662,8 @@
         }
 
         .config-title {
+            cursor: default;
+            user-select: none;
             width: 100%;
             text-align: center;
             font-weight: bold;
@@ -681,6 +683,8 @@
             color: var(--caret-dim-color);
             font-style: italic;
             font-size: 0.9em;
+            cursor: default;
+            user-select: none;
         }
 
         #find-pane .config-col.shortcuts {
@@ -691,6 +695,8 @@
             color: var(--find-text-color);
             gap: 0;
             min-width: 285px;
+            cursor: default;
+            user-select: none;
         }
 
         #find-pane .config-col.shortcuts li {
@@ -836,6 +842,10 @@
 
         a:hover {
             color: var(--find-text-color);
+        }
+
+        .footer {
+            margin-bottom: 1rem;
         }
 
         /* toast */
@@ -1007,7 +1017,7 @@
                     <li><span class="kbd-spacer"><kbd>Ctrl</kbd>+<kbd>M</kbd></span> — Mark Node</li>
                     <li><span class="kbd-spacer"><kbd>Alt</kbd>+<kbd>-</kbd></span> — Collapse All</li>
                 </ul>
-                <span class="sub-title">
+                <span class="sub-title footer">
                     <a href="https://leo-editor.github.io/leo-editor/" target="_blank">Leo Editor</a>
                     <span>Outline Viewer - Made by</span>
                     <a href="https://github.com/boltex" target="_blank">Félix</a>
