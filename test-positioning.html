@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Docked Button Example</title>
+  <style>
+    .parent {
+      position: relative;   /* establish positioning context */
+      width: 400px;
+      height: 300px;
+      border: 1px solid #ccc;
+      margin: 50px;
+      background: #f9f9f9;
+      overflow: auto;       /* make content scrollable */
+    }
+
+    .content {
+      height: 600px;        /* tall so scrolling happens */
+      padding: 10px;
+    }
+
+    .child {
+      position: absolute;   /* relative to parent */
+      bottom: 10px;
+      right: 10px;
+      padding: 8px 12px;
+      background: #007acc;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .child:hover {
+      background: #005a99;
+    }
+  </style>
+</head>
+<body>
+  <div class="parent">
+    <div class="content">
+      <p>Scroll down inside this box.</p>
+      <p>The button stays docked to the bottom-right corner of the parent, not the scrolling content.</p>
+      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+      <p>Vivamus luctus urna sed urna ultricies ac tempor dui sagittis.</p>
+      <p>In condimentum facilisis porta.</p>
+      <p>Sed nec diam eu diam mattis viverra.</p>
+      <p>Even more filler text...</p>
+      <p>Keep scrolling...</p>
+      <p>Almost at the end...</p>
+    </div>
+    <button class="child">Click Me</button>
+  </div>
+</body>
+</html>
