@@ -829,6 +829,15 @@
             outline-offset: -1px;
         }
 
+        a {
+            color: var(--caret-dim-color);
+            text-decoration: underline;
+        }
+
+        a:hover {
+            color: var(--find-text-color);
+        }
+
         /* toast */
         #toast {
             position: fixed;
@@ -998,8 +1007,12 @@
                     <li><span class="kbd-spacer"><kbd>Ctrl</kbd>+<kbd>M</kbd></span> — Mark Node</li>
                     <li><span class="kbd-spacer"><kbd>Alt</kbd>+<kbd>-</kbd></span> — Collapse All</li>
                 </ul>
+                <span class="sub-title">
+                    <a href="https://leo-editor.github.io/leo-editor/" target="_blank">Leo Editor</a>
+                    <span>Outline Viewer - Made by</span>
+                    <a href="https://github.com/boltex" target="_blank">Félix</a>
+                </span>
             </div>
-
         </div>
     </div>
     <div id="main-resizer"></div>
