@@ -1070,6 +1070,7 @@
     <div id="toast" role="status" aria-live="polite" hidden></div>
     <script>
         const title = "Virtual Tree View Demo 2"; // Also used as key for localstorage save/restore of expanded and marked sets.
+        const genTimestamp = "1234567890"; // Change this to force reload of saved localstorage data.
         const tree = {
             "gnx": 0,
             "children": [
@@ -2048,7 +2049,7 @@
             SPACER.style.height = flatRows.length * ROW_HEIGHT + "px";
 
             let selectedRadioValue = ''; // Falsy for now
-            const selectedRadio = document.querySelector(`input[name="find-scope"]:checked`);
+            const selectedRadio = document.querySelector('input[name="find-scope"]:checked');
             if (selectedRadio) {
                 selectedRadioValue = selectedRadio.value;
             }
@@ -2159,14 +2160,14 @@
                     newWidth = minWidth;
                 }
                 OUTLINE_FIND_CONTAINER.style.width = `${newWidth}px`;
-                OUTLINE_FIND_CONTAINER.style.height = `100%`;
+                OUTLINE_FIND_CONTAINER.style.height = '100%';
             } else {
                 let newHeight = window.innerHeight * mainRatio;
                 if (newHeight < minWidth) {
                     newHeight = minWidth;
                 }
                 OUTLINE_FIND_CONTAINER.style.height = `${newHeight}px`;
-                OUTLINE_FIND_CONTAINER.style.width = `100%`;
+                OUTLINE_FIND_CONTAINER.style.width = '100%';
             }
             renderTree();
         }
@@ -2252,10 +2253,8 @@
                 } else if (newHeight > containerHeight - minHeight) {
                     newHeight = containerHeight - minHeight;
                 }
-
                 // Set flex properties to control the distribution
                 OUTLINE_PANE.style.flex = `0 0 ${newHeight}px`;
-                FIND_PANE.style.flex = `1 1 auto`; // Let it take the remaining space
             } else {
                 const containerWidth = OUTLINE_FIND_CONTAINER.offsetWidth;
                 let newWidth = containerWidth * secondaryRatio;
@@ -2266,11 +2265,10 @@
                 } else if (newWidth > containerWidth - minHeight) {
                     newWidth = containerWidth - minHeight;
                 }
-
                 // Set flex properties to control the distribution
                 OUTLINE_PANE.style.flex = `0 0 ${newWidth}px`;
-                FIND_PANE.style.flex = `1 1 auto`; // Let it take the remaining space
             }
+            FIND_PANE.style.flex = '1 1 auto'; // Let it take the remaining space
         }
 
         const handleSecondaryDrag = throttle(function (e) {
@@ -2284,7 +2282,7 @@
                 const containerHeight = OUTLINE_FIND_CONTAINER.offsetHeight;
                 if (relativeY >= minHeight && relativeY <= containerHeight - minHeight) {
                     OUTLINE_PANE.style.flex = `0 0 ${relativeY - 8}px`;
-                    FIND_PANE.style.flex = `1 1 auto`; // Let it take the remaining space
+                    FIND_PANE.style.flex = '1 1 auto'; // Let it take the remaining space
                 }
             } else {
                 let clientX = e.clientX;
@@ -2296,7 +2294,7 @@
                 const containerWidth = OUTLINE_FIND_CONTAINER.offsetWidth;
                 if (relativeX >= minHeight && relativeX <= containerWidth - minHeight) {
                     OUTLINE_PANE.style.flex = `0 0 ${relativeX - 3}px`;
-                    FIND_PANE.style.flex = `1 1 auto`; // Let it take the remaining space
+                    FIND_PANE.style.flex = '1 1 auto'; // Let it take the remaining space
                 }
             }
             renderTree();
@@ -2358,13 +2356,13 @@
                 selected: selectedPosition,
                 expanded: expandedPositions
             };
-            safeLocalStorageSet(title, JSON.stringify(dataToSave));
+            safeLocalStorageSet(title + genTimestamp, JSON.stringify(dataToSave)); // Key is title + genTimestamp
         }
 
         function loadDocumentStateFromLocalStorage() {
             // returns the selected node if found, otherwise null
             let initialSelectedNode = null;
-            const savedData = safeLocalStorageGet(title);
+            const savedData = safeLocalStorageGet(title + genTimestamp); // Key is title + genTimestamp
             if (savedData) {
                 try {
                     const parsedData = JSON.parse(savedData);
@@ -2732,7 +2730,7 @@
             }
 
             let selectedRadioValue = ''; // Falsy for now
-            const selectedRadio = document.querySelector(`input[name="find-scope"]:checked`);
+            const selectedRadio = document.querySelector('input[name="find-scope"]:checked');
             if (selectedRadio) {
                 selectedRadioValue = selectedRadio.value;
             }
@@ -2890,7 +2888,7 @@
             }
 
             let selectedRadioValue = ''; // Falsy for now
-            const selectedRadio = document.querySelector(`input[name="find-scope"]:checked`);
+            const selectedRadio = document.querySelector('input[name="find-scope"]:checked');
             if (selectedRadio) {
                 selectedRadioValue = selectedRadio.value;
             }
