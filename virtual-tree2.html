@@ -633,15 +633,12 @@
         }
 
         #config-btn {
-            position: absolute;
-            top: calc(100% - 42px);
-            right: 10px;
+            position: fixed;
             z-index: 2001;
             cursor: pointer;
             font-size: 20px;
             opacity: 0.6;
             transition: transform 0.2s ease, opacity 0.2s ease;
-            right: 0;
             text-shadow: 0 3px 3px rgba(0, 0, 0, 0.4);
             user-select: none;
         }
@@ -2185,6 +2182,7 @@
                 }
                 OUTLINE_FIND_CONTAINER.style.width = `${newWidth}px`;
                 OUTLINE_FIND_CONTAINER.style.height = '100%';
+                CONFIG_BTN.style.inset = `auto auto 7px ${newWidth - 33}px`;
             } else {
                 let newHeight = window.innerHeight * mainRatio;
                 if (newHeight < minWidth) {
@@ -2192,8 +2190,8 @@
                 }
                 OUTLINE_FIND_CONTAINER.style.height = `${newHeight}px`;
                 OUTLINE_FIND_CONTAINER.style.width = '100%';
+                CONFIG_BTN.style.inset = `${newHeight - 33}px 7px auto auto`;
             }
-            renderTree();
         }
 
         const handleDrag = throttle(function (e) {
@@ -2208,6 +2206,7 @@
                 } else {
                     OUTLINE_FIND_CONTAINER.style.width = (minWidth - 3) + 'px';
                 }
+                CONFIG_BTN.style.inset = `auto auto 7px ${newWidth - 33}px`;
             } else {
                 let clientY = e.clientY;
                 if (e.touches) {
@@ -2219,8 +2218,9 @@
                 } else {
                     OUTLINE_FIND_CONTAINER.style.height = (minWidth - 3) + 'px';
                 }
+                renderTree(); // Resizing vertically, so need to re-render tree
+                CONFIG_BTN.style.inset = `${newHeight - 33}px 7px auto auto`;
             }
-            renderTree();
         }, 33);
 
         function startDrag(e) {
@@ -2308,6 +2308,7 @@
                     OUTLINE_PANE.style.flex = `0 0 ${relativeY - 8}px`;
                     FIND_PANE.style.flex = '1 1 auto'; // Let it take the remaining space
                 }
+                renderTree(); // Resizing vertically, so need to re-render tree
             } else {
                 let clientX = e.clientX;
                 if (e.touches) {
@@ -2321,7 +2322,6 @@
                     FIND_PANE.style.flex = '1 1 auto'; // Let it take the remaining space
                 }
             }
-            renderTree();
         }, 33);
 
         function startSecondaryDrag(e) {
