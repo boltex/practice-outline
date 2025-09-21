@@ -226,9 +226,7 @@
         }
 
         #collapse-all-btn {
-            position: absolute;
-            top: 3px;
-            right: 3px;
+            position: fixed;
             z-index: 100;
             opacity: 0;
             transition: opacity 0.2s ease;
@@ -2220,6 +2218,7 @@
                 renderTree(); // Resizing vertically, so need to re-render tree
                 CONFIG_BTN.style.inset = `${newHeight - 33}px 7px auto auto`;
             }
+            COLLAPSE_ALL_BTN.style.inset = `6px auto auto ${OUTLINE_PANE.clientWidth - 18}px`;
         }, 33);
 
         function startDrag(e) {
@@ -2292,6 +2291,7 @@
                 OUTLINE_PANE.style.flex = `0 0 ${newWidth}px`;
             }
             FIND_PANE.style.flex = '1 1 auto'; // Let it take the remaining space
+            COLLAPSE_ALL_BTN.style.inset = `6px auto auto ${OUTLINE_PANE.clientWidth - 18}px`;
         }
 
         const handleSecondaryDrag = throttle(function (e) {
@@ -2321,6 +2321,7 @@
                     FIND_PANE.style.flex = '1 1 auto'; // Let it take the remaining space
                 }
             }
+            COLLAPSE_ALL_BTN.style.inset = `6px auto auto ${OUTLINE_PANE.clientWidth - 18}px`;
         }, 33);
 
         function startSecondaryDrag(e) {
