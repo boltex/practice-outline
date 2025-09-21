@@ -2151,24 +2151,12 @@
             }
         }
 
-        function saveMainRatio(proportion) {
-            safeLocalStorageSet('mainRatio', proportion);
-        }
-
-        const throttledSaveMainRatio = throttle(saveMainRatio, 500);
-
-        function getSavedMainRatio() {
-            const saved = safeLocalStorageGet('mainRatio');
-            return saved != null ? parseFloat(saved) : null;
-        }
-
         function updateProportion() {
             if (currentLayout === 'vertical') {
                 mainRatio = OUTLINE_FIND_CONTAINER.offsetWidth / window.innerWidth;
             } else {
                 mainRatio = OUTLINE_FIND_CONTAINER.offsetHeight / window.innerHeight;
             }
-            throttledSaveMainRatio(mainRatio);
         }
 
         function updateOutlineContainerSize() {
@@ -2244,24 +2232,12 @@
             }
         }
 
-        function saveSecondaryRatio(proportion) {
-            safeLocalStorageSet('secondaryRatio', proportion);
-        }
-
-        const throttledSaveSecondaryRatio = throttle(saveSecondaryRatio, 500);
-
-        function getSavedSecondaryRatio() {
-            const saved = safeLocalStorageGet('secondaryRatio');
-            return saved != null ? parseFloat(saved) : null;
-        }
-
         function updateSecondaryProportion() {
             if (currentLayout === 'vertical') {
                 secondaryRatio = (OUTLINE_PANE.offsetHeight - 6) / OUTLINE_FIND_CONTAINER.offsetHeight;
             } else {
                 secondaryRatio = OUTLINE_PANE.offsetWidth / OUTLINE_FIND_CONTAINER.offsetWidth;
             }
-            throttledSaveSecondaryRatio(secondaryRatio);
         }
 
         function updateOutlinePaneSize() {
@@ -2352,10 +2328,14 @@
             updateOutlinePaneSize();
         }
 
-        function saveDocumentStateToLocalStorage() {
-            // Save the current configuration preferences
+        // save all needed state to localStorage
+        function saveAll() {
+            saveLayoutPreferences();
             saveConfigPreferences();
+            saveDocumentStateToLocalStorage();
+        }
 
+        function saveDocumentStateToLocalStorage() {
             // Use the allNodesInOrder tree, the full list from the top as if all nodes were expanded,
             // to note the position of hoisted node(s), expanded node(s), and the currently selected node.
             let hoistStackPositions = []; // empty means no hoist
@@ -2431,30 +2411,15 @@
             }
         }
 
-        const getCurrentTheme = () => {
-            const savedTheme = safeLocalStorageGet('theme');
-            if (savedTheme) {
-                return savedTheme;
-            }
-            // Use OS preference as fallback
-            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        };
-
-        const getCurrentLayout = () => {
-            return localStorage.getItem('layout') || 'vertical';
-        };
-
         const applyTheme = (theme) => {
             currentTheme = theme;
             HTML_ELEMENT.setAttribute('data-theme', theme);
-            safeLocalStorageSet('theme', theme);
             THEME_TOGGLE.title = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
             THEME_ICON.innerHTML = theme === 'dark' ? '🌙' : '☀️';
         };
 
         const applyLayout = (layout) => {
             currentLayout = layout;
-            localStorage.setItem('layout', layout);
             LAYOUT_TOGGLE.title = layout === 'vertical' ? 'Switch to horizontal layout' : 'Switch to vertical layout';
             if (layout === 'horizontal') {
                 HTML_ELEMENT.setAttribute('data-layout', 'horizontal');
@@ -2507,7 +2472,7 @@
         function setupWindowHandlers() {
             window.addEventListener('resize', throttle(handleWindowResize, 33));
             window.addEventListener('keydown', handleGlobalKeyDown);
-            window.addEventListener('beforeunload', saveDocumentStateToLocalStorage);
+            window.addEventListener('beforeunload', saveAll);
         }
 
         function setupButtonHandlers() {
@@ -2700,6 +2665,8 @@
         }
 
         function handleDOMContentLoaded() {
+            loadConfigPreferences();
+
             const initialSelectedNode = loadDocumentStateFromLocalStorage();
             if (!initialSelectedNode) {
                 selectAndOrToggleAndRedraw(tree.children[0]); // sets selectedNode amd flatRows
@@ -2984,7 +2951,6 @@
                                 data[node.gnx].icon = (data[node.gnx].icon || 0) | 2; // Set marked bit
                             }
                         }
-
                         selectAndOrToggleAndRedraw(node);
                         BODY_PANE.focus();
                         setTimeout(() => {
@@ -3006,7 +2972,6 @@
                                 data[node.gnx].icon = (data[node.gnx].icon || 0) | 2; // Set marked bit
                             }
                         }
-
                         selectAndOrToggleAndRedraw(node);
                         OUTLINE_PANE.focus();
                         setTimeout(() => {
@@ -3033,7 +2998,6 @@
                     // In previous nodes, check body first (since we're going backward)
                     if (searchInBody && body) {
                         const match = findLastMatch(body);
-
                         if (match) {
                             if (markFind && !marked.has(node.gnx)) {
                                 marked.add(node.gnx);
@@ -3041,7 +3005,6 @@
                                     data[node.gnx].icon = (data[node.gnx].icon || 0) | 2; // Set marked bit
                                 }
                             }
-
                             selectAndOrToggleAndRedraw(node);
                             BODY_PANE.focus();
                             setTimeout(() => {
@@ -3078,7 +3041,6 @@
                 if (searchInHeadlines) searchedParams.push('head');
                 if (searchInBody) searchedParams.push('body');
                 showToast(`Not found: (${searchedParams.join(", ")}) ${searchText}`, 1500);
-
             } catch (e) {
                 showToast('Invalid search pattern: ' + e.message, 2000);
             }
@@ -3087,7 +3049,6 @@
         function highlightMatchInHeadline(startIndex, endIndex) {
             // Use the global selectedLabelElement which is already set after selectAndOrToggleAndRedraw
             if (!selectedLabelElement) return;
-
             // Find the first text node in the label element
             let textNode = null;
             for (const node of selectedLabelElement.childNodes) {
@@ -3096,9 +3057,7 @@
                     break;
                 }
             }
-
             if (!textNode) return;
-
             try {
                 const range = document.createRange();
                 range.setStart(textNode, startIndex);
@@ -3115,7 +3074,6 @@
         function highlightMatchInBody(startIndex, endIndex) {
             // The body pane content is set directly as textContent, so it's a single text node
             if (!BODY_PANE.firstChild || BODY_PANE.firstChild.nodeType !== Node.TEXT_NODE) return;
-
             try {
                 const range = document.createRange();
                 range.setStart(BODY_PANE.firstChild, startIndex);
@@ -3139,16 +3097,9 @@
             return 0;
         }
 
-        function initializeLayout() {
+        function initializeThemeAndLayout() {
             document.title = title; // Set the document title
-            const savedOutlineBodyRatio = getSavedMainRatio();
-            const savedOutlineFindRatio = getSavedSecondaryRatio();
-            if (savedOutlineBodyRatio != null) {
-                mainRatio = savedOutlineBodyRatio;
-            }
-            if (savedOutlineFindRatio != null) {
-                secondaryRatio = savedOutlineFindRatio;
-            }
+            loadThemeAndLayoutPreferences();
             updateMarkedButtonStates();
             updateHoistButtonStates();
             setupEventHandlers();
@@ -3164,7 +3115,6 @@
             SHOW_THEME_TOGGLE.addEventListener('change', updateButtonVisibility);
             SHOW_NODE_ICONS.addEventListener('change', updateNodeIcons);
             SHOW_COLLAPSE_ALL.addEventListener('change', updateButtonVisibility);
-            loadConfigPreferences();
         }
 
         function updateButtonVisibility() {
@@ -3191,6 +3141,16 @@
             }
         }
 
+        function saveLayoutPreferences() {
+            const layoutPreferences = {
+                mainRatio: mainRatio,
+                secondaryRatio: secondaryRatio,
+                theme: currentTheme,
+                layout: currentLayout
+            };
+            safeLocalStorageSet('layoutPreferences', JSON.stringify(layoutPreferences));
+        }
+
         function saveConfigPreferences() {
             const selectedFindScope = document.querySelector('input[name="find-scope"]:checked')?.value || 'entire';
 
@@ -3213,6 +3173,29 @@
                 findScope: selectedFindScope
             };
             safeLocalStorageSet('configPreferences', JSON.stringify(preferences));
+        }
+
+        function loadThemeAndLayoutPreferences() {
+            const savedPrefs = safeLocalStorageGet('layoutPreferences');
+            if (savedPrefs) {
+                try {
+                    const prefs = JSON.parse(savedPrefs);
+                    if (typeof prefs.mainRatio === 'number') {
+                        mainRatio = prefs.mainRatio;
+                    }
+                    if (typeof prefs.secondaryRatio === 'number') {
+                        secondaryRatio = prefs.secondaryRatio;
+                    }
+                    if (prefs.theme) {
+                        applyTheme(prefs.theme);
+                    }
+                    if (prefs.layout) {
+                        applyLayout(prefs.layout);
+                    }
+                } catch (e) {
+                    console.error('Error loading layout preferences:', e);
+                }
+            }
         }
 
         function loadConfigPreferences() {
@@ -3273,10 +3256,8 @@
             }, duration);
         }
 
-        // Apply theme & layout before anything else to avoid flash of wrong theme
-        applyTheme(getCurrentTheme());
-        initializeLayout(); // gets ratios from localStorage and applies layout and theme
-        applyLayout(getCurrentLayout()); // flatRows will be null at this point so no render.
+        // Apply theme & layout before anything else to avoid flash of unstyled content
+        initializeThemeAndLayout(); // gets ratios from localStorage and applies layout and theme
         // Start everything once DOM is loaded
         window.addEventListener('DOMContentLoaded', handleDOMContentLoaded);
 
