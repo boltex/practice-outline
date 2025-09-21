@@ -1016,7 +1016,7 @@
                 </ul>
                 <span class="sub-title footer">
                     <a href="https://leo-editor.github.io/leo-editor/" target="_blank">Leo Editor</a>
-                    <span>Outline Viewer - 1.0.0 - Made by</span>
+                    <span>Outline Viewer - 1.0.1 - Made by</span>
                     <a href="https://github.com/boltex" target="_blank">Félix</a>
                 </span>
             </div>
@@ -2709,10 +2709,6 @@
                     BODY_PANE.textContent = data[selectedNode.gnx].bodyString || "";
                 }
             }
-
-            // Layout has been initialized before dom loaded, to prevent 'fouc'
-            renderTree(); // flatRows already set by selectAndOrToggleAndRedraw: Ok to render now
-            scrollSelectedNodeIntoView();
         }
 
         function handleThemeToggleClick() {
