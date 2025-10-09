@@ -46,7 +46,8 @@
             background: #cce;
         }
 
-        .menu-item.active {
+        .menu-item.active,
+        .menu-item.sub-active {
             background: #bbd;
         }
 
@@ -134,6 +135,13 @@
                 const item = document.createElement("div");
                 item.className = "menu-item";
                 item.textContent = entry.label;
+
+                item.addEventListener("mouseenter", () => {
+                    if (focusedItem && focusedItem !== item) {
+                        focusedItem.classList.remove("focused");
+                        focusedItem = null;
+                    }
+                });
 
                 if (entry.entries) {
                     if (level > 0) item.classList.add("has-sub");
@@ -233,6 +241,9 @@
             document.querySelectorAll(".menu-item.focused").forEach(item =>
                 item.classList.remove("focused")
             );
+            document.querySelectorAll(".menu-item.sub-active").forEach(item =>
+                item.classList.remove("sub-active")
+            );
             focusedItem = null;
         }
 
@@ -242,6 +253,14 @@
             item.classList.add("focused");
             focusedItem = item;
             item.scrollIntoView({ block: "nearest" });
+            document.querySelectorAll(".menu-item.sub-active").forEach(el =>
+                el.classList.remove("sub-active")
+            );
+            let ancestor = item.parentElement?.closest(".menu-item");
+            while (ancestor) {
+                ancestor.classList.add("sub-active");
+                ancestor = ancestor.parentElement?.closest(".submenu")?.parentElement?.closest(".menu-item");
+            }
         }
 
         document.addEventListener("click", (e) => {
@@ -361,6 +380,15 @@
                 case "Enter":
                 case " ":
                     e.preventDefault();
+                    if (focusedItem?.classList.contains("has-sub")) {
+                        const sub = focusedItem.querySelector(":scope > .submenu");
+                        if (sub) {
+                            positionSubmenu(focusedItem, sub, 1);
+                            sub.classList.add("visible");
+                            focusItem(sub.querySelector(".menu-item"));
+                            return;
+                        }
+                    }
                     focusedItem?.click();
                     break;
                 case "Escape":
