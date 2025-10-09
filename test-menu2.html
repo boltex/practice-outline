@@ -123,6 +123,8 @@
 
         let activeTopMenu = null;
         let focusedItem = null;
+        const topLevelItems = [];
+        const topLevelSubmenus = new Map();
 
         function buildMenu(entries, level = 0) {
             const menu = document.createElement("div");
@@ -138,6 +140,7 @@
                     const sub = buildMenu(entry.entries, level + 1);
                     if (level === 0) {
                         document.body.appendChild(sub);
+                        topLevelSubmenus.set(item, sub);
                     } else {
                         item.appendChild(sub);
                     }
@@ -178,6 +181,10 @@
                     });
                 }
 
+                if (level === 0) {
+                    topLevelItems.push(item);
+                }
+
                 menu.appendChild(item);
             }
 
@@ -187,10 +194,12 @@
         function openTopMenu(item, sub, level) {
             closeAllSubmenus();
             activeTopMenu = item;
-            positionSubmenu(item, sub, level);
-            sub.classList.add("visible");
+            const targetSubmenu = sub || topLevelSubmenus.get(item);
+            if (!targetSubmenu) return;
+            positionSubmenu(item, targetSubmenu, level);
+            targetSubmenu.classList.add("visible");
             item.classList.add("active");
-            // focusItem(sub.querySelector(".menu-item"));
+            focusedItem = null;
         }
 
         function positionSubmenu(parentItem, submenu, level) {
@@ -228,12 +237,11 @@
         }
 
         function focusItem(item) {
+            if (!item) return; // Safety check
             if (focusedItem) focusedItem.classList.remove("focused");
-            if (item) {
-                item.classList.add("focused");
-                focusedItem = item;
-                item.scrollIntoView({ block: "nearest" });
-            }
+            item.classList.add("focused");
+            focusedItem = item;
+            item.scrollIntoView({ block: "nearest" });
         }
 
         document.addEventListener("click", (e) => {
@@ -246,32 +254,43 @@
         document.addEventListener("keydown", (e) => {
             if (!activeTopMenu) return;
 
-            let openSubmenu = document.querySelector(".submenu.visible:last-of-type");
-            const topItems = Array.from(document.querySelectorAll(".menu > .menu-item"));
+            const topItems = topLevelItems;
             const topIndex = topItems.indexOf(activeTopMenu);
+            if (topIndex === -1) return;
 
-            // Handle top-level navigation even if no submenu is open
-            if (!openSubmenu) {
+            let openSubmenu = focusedItem
+                ? focusedItem.closest(".submenu")
+                : topLevelSubmenus.get(activeTopMenu);
+
+            if (!openSubmenu) return;
+
+            // Handle top-level navigation
+            if (!focusedItem || !openSubmenu.contains(focusedItem)) {
                 switch (e.key) {
                     case "ArrowRight":
                         e.preventDefault();
                         const nextTop = topItems[(topIndex + 1) % topItems.length];
-                        const nextSub = document.querySelectorAll(".submenu")[topIndex + 1];
-                        openTopMenu(nextTop, nextSub, 0);
+                        const nextSub = topLevelSubmenus.get(nextTop);
+                        if (nextTop && nextSub) {
+                            openTopMenu(nextTop, nextSub, 0);
+                            focusItem(nextSub.querySelector(".menu-item"));
+                        }
                         return;
                     case "ArrowLeft":
                         e.preventDefault();
                         const prevTop = topItems[(topIndex - 1 + topItems.length) % topItems.length];
-                        const prevSub = document.querySelectorAll(".submenu")[topIndex - 1];
-                        openTopMenu(prevTop, prevSub, 0);
+                        const prevSub = topLevelSubmenus.get(prevTop);
+                        if (prevTop && prevSub) {
+                            openTopMenu(prevTop, prevSub, 0);
+                            focusItem(prevSub.querySelector(".menu-item"));
+                        }
                         return;
                     case "ArrowDown":
-                    case "Enter":
-                    case " ":
                         e.preventDefault();
-                        const firstSub = document.querySelectorAll(".submenu")[topIndex];
-                        if (firstSub) {
-                            openTopMenu(activeTopMenu, firstSub, 0);
+                        const currentSub = topLevelSubmenus.get(activeTopMenu);
+                        if (currentSub) {
+                            const firstItem = currentSub.querySelector(".menu-item");
+                            if (firstItem) focusItem(firstItem);
                         }
                         return;
                     case "Escape":
@@ -283,43 +302,60 @@
                 return; // stop here if we just handled top-level
             }
 
-            // Existing submenu handling logic below
-            const items = Array.from(openSubmenu.querySelectorAll(".menu-item"));
-            const index = focusedItem ? items.indexOf(focusedItem) : 0;
+            // Handle submenu navigation
+            const items = Array.from(openSubmenu.querySelectorAll(":scope > .menu-item"));
+            const index = focusedItem ? items.indexOf(focusedItem) : -1;
 
             switch (e.key) {
                 case "ArrowDown":
                     e.preventDefault();
-                    focusItem(items[(index + 1) % items.length]);
+                    if (index < items.length - 1) {
+                        focusItem(items[index + 1]);
+                    } else {
+                        focusItem(items[0]); // Wrap to first item
+                    }
                     break;
                 case "ArrowUp":
                     e.preventDefault();
-                    focusItem(items[(index - 1 + items.length) % items.length]);
+                    if (index > 0) {
+                        focusItem(items[index - 1]);
+                    } else {
+                        focusItem(items[items.length - 1]); // Wrap to last item
+                    }
                     break;
                 case "ArrowRight":
                     e.preventDefault();
-                    if (focusedItem?.querySelector(".submenu")) {
-                        const sub = focusedItem.querySelector(".submenu");
-                        positionSubmenu(focusedItem, sub, 1);
-                        sub.classList.add("visible");
-                        focusItem(sub.querySelector(".menu-item"));
+                    if (focusedItem?.classList.contains("has-sub")) {
+                        const sub = focusedItem.querySelector(":scope > .submenu");
+                        if (sub) {
+                            positionSubmenu(focusedItem, sub, 1);
+                            sub.classList.add("visible");
+                            focusItem(sub.querySelector(".menu-item"));
+                        }
                     } else {
                         const nextTop = topItems[(topIndex + 1) % topItems.length];
-                        const nextSub = document.querySelectorAll(".submenu")[topIndex + 1];
-                        openTopMenu(nextTop, nextSub, 0);
+                        const nextSub = topLevelSubmenus.get(nextTop);
+                        if (nextTop && nextSub) {
+                            openTopMenu(nextTop, nextSub, 0);
+                            focusItem(nextSub.querySelector(".menu-item"));
+                        }
                     }
                     break;
                 case "ArrowLeft":
                     e.preventDefault();
-                    if (focusedItem && focusedItem.closest(".submenu .submenu")) {
-                        const parentSub = focusedItem.closest(".submenu");
-                        parentSub.classList.remove("visible");
-                        const parentItem = parentSub.parentElement.closest(".menu-item");
+                    const parentMenu = focusedItem.closest(".submenu");
+                    const parentItem = parentMenu?.parentElement?.closest(".menu-item");
+
+                    if (parentItem) {
+                        parentMenu.classList.remove("visible");
                         focusItem(parentItem);
                     } else {
                         const prevTop = topItems[(topIndex - 1 + topItems.length) % topItems.length];
-                        const prevSub = document.querySelectorAll(".submenu")[topIndex - 1];
-                        openTopMenu(prevTop, prevSub, 0);
+                        const prevSub = topLevelSubmenus.get(prevTop);
+                        if (prevTop && prevSub) {
+                            openTopMenu(prevTop, prevSub, 0);
+                            focusItem(prevSub.querySelector(".menu-item"));
+                        }
                     }
                     break;
                 case "Enter":
@@ -335,6 +371,8 @@
             }
         });
 
+        topLevelItems.length = 0;
+        topLevelSubmenus.clear();
 
         const menuBar = buildMenu(menuData);
         document.body.prepend(menuBar);
