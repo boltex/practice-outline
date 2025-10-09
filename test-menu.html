@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pure JS App Menu Demo</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: sans-serif;
+        }
+
+        /* Top menu bar */
+        .menu {
+            display: flex;
+            background: #eee;
+            border-bottom: 1px solid #ccc;
+            position: relative;
+            z-index: 10;
+            user-select: none;
+        }
+
+        /* Submenus */
+        .submenu {
+            display: none;
+            flex-direction: column;
+            position: absolute;
+            background: #fff;
+            border: 1px solid #ccc;
+            min-width: 160px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+
+        .submenu.visible {
+            display: flex;
+        }
+
+        .menu-item {
+            position: relative;
+            padding: 5px 14px;
+            cursor: default;
+            white-space: nowrap;
+        }
+
+        .menu-item:hover {
+            background: #cce;
+        }
+
+        .menu:not(.submenu)>.menu-item {
+            padding: 5px 16px;
+        }
+
+        .menu-item.has-sub::after {
+            content: "▶";
+            font-size: 10px;
+            float: right;
+            margin-left: 8px;
+            color: #666;
+        }
+
+        .menu-item.active {
+            background: #bbd;
+        }
+    </style>
+</head>
+
+<body>
+
+    <script>
+        const menuData = [
+            {
+                label: "File",
+                entries: [
+                    { label: "Open...", action: "open" },
+                    {
+                        label: "Export",
+                        entries: [
+                            { label: "As PDF...", action: "export_pdf" },
+                            { label: "As Image...", action: "export_img" },
+                        ],
+                    },
+                    { label: "Exit", action: "exit" },
+                ],
+            },
+            {
+                label: "Edit",
+                entries: [
+                    { label: "Undo", action: "undo" },
+                    { label: "Redo", action: "redo" },
+                ],
+            },
+            {
+                label: "View",
+                entries: [
+                    { label: "Zoom In", action: "zoom_in" },
+                    { label: "Zoom Out", action: "zoom_out" },
+                ],
+            },
+            {
+                label: "Help",
+                entries: [
+                    { label: "Documentation", action: "docs" },
+                    { label: "About", action: "about" },
+                ],
+            },
+        ];
+
+        let activeTopMenu = null; // currently open top-level menu
+
+        function buildMenu(entries, level = 0) {
+            const menu = document.createElement("div");
+            menu.className = "menu" + (level > 0 ? " submenu" : "");
+
+            for (const entry of entries) {
+                const item = document.createElement("div");
+                item.className = "menu-item";
+                item.textContent = entry.label;
+
+                if (entry.entries) {
+                    if (level > 0) item.classList.add("has-sub");
+                    const sub = buildMenu(entry.entries, level + 1);
+
+                    if (level === 0) {
+                        document.body.appendChild(sub);
+                    } else {
+                        item.appendChild(sub);
+                    }
+
+                    if (level === 0) {
+                        // Click to toggle top-level submenu
+                        item.addEventListener("click", (e) => {
+                            e.stopPropagation();
+                            if (activeTopMenu === item) {
+                                closeAllSubmenus();
+                                activeTopMenu = null;
+                            } else {
+                                closeAllSubmenus();
+                                activeTopMenu = item;
+                                positionSubmenu(item, sub, level);
+                                sub.classList.add("visible");
+                                item.classList.add("active");
+                            }
+                        });
+
+                        // If a top-level menu is already open, hovering another opens it
+                        item.addEventListener("mouseenter", () => {
+                            if (activeTopMenu && activeTopMenu !== item) {
+                                closeAllSubmenus();
+                                activeTopMenu = item;
+                                positionSubmenu(item, sub, level);
+                                sub.classList.add("visible");
+                                item.classList.add("active");
+                            }
+                        });
+                    } else {
+                        // Nested submenus still open on hover
+                        item.addEventListener("mouseenter", () => {
+                            positionSubmenu(item, sub, level);
+                            sub.classList.add("visible");
+                        });
+                        item.addEventListener("mouseleave", (e) => {
+                            const related = e.relatedTarget;
+                            if (!related || (!item.contains(related) && !sub.contains(related))) {
+                                sub.classList.remove("visible");
+                            }
+                        });
+                    }
+                } else if (entry.action) {
+                    item.addEventListener("click", () => {
+                        console.log("Action triggered:", entry.action);
+                        closeAllSubmenus();
+                        activeTopMenu = null;
+                    });
+                }
+
+                menu.appendChild(item);
+            }
+
+            return menu;
+        }
+
+        function positionSubmenu(parentItem, submenu, level) {
+            submenu.style.display = "flex";
+            const rect = parentItem.getBoundingClientRect();
+            const subRect = submenu.getBoundingClientRect();
+
+            if (level === 0) {
+                submenu.style.left = rect.left + "px";
+                submenu.style.top = rect.bottom + "px";
+            } else {
+                const spaceRight = window.innerWidth - rect.right;
+                const spaceLeft = rect.left;
+                if (spaceRight < subRect.width && spaceLeft > subRect.width) {
+                    submenu.style.left = -subRect.width + "px";
+                } else {
+                    submenu.style.left = rect.width + "px";
+                }
+                submenu.style.top = "0px";
+            }
+
+            submenu.style.display = "";
+        }
+
+        function closeAllSubmenus() {
+            document.querySelectorAll(".submenu.visible").forEach(sub =>
+                sub.classList.remove("visible")
+            );
+            document.querySelectorAll(".menu-item.active").forEach(item =>
+                item.classList.remove("active")
+            );
+        }
+
+        document.addEventListener("click", (e) => {
+            if (!e.target.closest(".menu")) {
+                closeAllSubmenus();
+                activeTopMenu = null;
+            }
+        });
+
+        const menuBar = buildMenu(menuData);
+        document.body.prepend(menuBar);
+    </script>
+
+</body>
+
+</html>
