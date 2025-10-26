@@ -71,7 +71,7 @@
 </head>
 
 <body>
-
+    <div id="top-menu"></div>
     <script>
         const menuData = [
             {
@@ -128,7 +128,7 @@
         const topLevelSubmenus = new Map();
 
         function buildMenu(entries, level = 0) {
-            const menu = document.createElement("div");
+            const menu = level === 0 ? document.getElementById("top-menu") : document.createElement("div");
             menu.className = "menu" + (level > 0 ? " submenu" : "");
 
             for (const entry of entries) {
